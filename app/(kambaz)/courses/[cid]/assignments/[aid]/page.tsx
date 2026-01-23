@@ -97,7 +97,11 @@ export default function AssignmentEditor() {
               <br />
               <label htmlFor="due-date-entry">Due</label>
               <br />
-              <input type="date" id="due-date-entry"></input>
+              <input
+                defaultValue={"2026-01-26g"}
+                type="date"
+                id="due-date-entry"
+              ></input>
             </td>
           </tr>
           <tr>
@@ -105,13 +109,21 @@ export default function AssignmentEditor() {
               <br />
               <label htmlFor="available-from-date-entry">Available from</label>
               <br />
-              <input type="date" id="available-from-date-entry"></input>
+              <input
+                defaultValue={"2026-01-20"}
+                type="date"
+                id="available-from-date-entry"
+              ></input>
             </td>
             <td>
               <br />
               <label htmlFor="available-until-date-entry">Until</label>
               <br />
-              <input type="date" id="available-until-date-entry"></input>
+              <input
+                type="date"
+                id="available-until-date-entry"
+                defaultValue={"2026-01-27"}
+              ></input>
             </td>
           </tr>
           <tr>
