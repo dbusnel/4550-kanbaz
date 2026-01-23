@@ -296,17 +296,17 @@ export default function Lab1() {
       <input type="date" defaultValue="2000-01-21" id="wd-text-fields-dob" />
       <br />
       <h4>Anchor tag</h4>
-      Please
+      Please{" " /* hacky solution to ESLint auto-deleting spaces*/}
       <a href="https://www.lipsum.com" id="wd-lipsum">
         click here
-      </a>
+      </a>{" "}
       to get dummy text
       <br />
       <h4>My GitHub</h4>
-      Please
-      <a href="https://www.lipsum.com" id="wd-lipsum">
+      Please{" "}
+      <a href="https://github.com/dbusnel/4550-kanbaz" id="wd-github">
         click here
-      </a>
+      </a>{" "}
       for my GitHub repository
       <br />
     </div>
