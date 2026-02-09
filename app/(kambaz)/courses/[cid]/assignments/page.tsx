@@ -6,6 +6,7 @@ import {
   InputGroup,
   FormControl,
 } from "react-bootstrap";
+import Link from "next/link";
 import InputGroupText from "react-bootstrap/esm/InputGroupText";
 import { ModuleControlButtons } from "../modules/LessonControlButtons";
 import LessonControlButtons from "../modules/LessonControlButtons";
@@ -66,7 +67,12 @@ export default function Assignments() {
                   <BsGripVertical className="me-2 fs-3" />
                   <LuNotepadText size={36} className="pr-2" />
                   <div>
-                    <p className="font-bold m-0">Assignment 1</p>
+                    <Link
+                      href="/courses/1234/assignments/123"
+                      className="font-bold m-0 text-black"
+                    >
+                      Assignment 1
+                    </Link>
                     <span className="d-flex flex-row m-0 p-0 items-center">
                       <p className="text-danger pr-2 m-0">Multiple Modules</p> |
                       <p className="font-bold pl-2 m-0">
@@ -88,7 +94,12 @@ export default function Assignments() {
                   <BsGripVertical className="me-2 fs-3" />
                   <LuNotepadText size={36} className="pr-2" />
                   <div>
-                    <p className="font-bold m-0">Assignment 2</p>
+                    <Link
+                      href="/courses/1234/assignments/123"
+                      className="font-bold m-0 text-black"
+                    >
+                      Assignment 2
+                    </Link>
                     <span className="d-flex flex-row m-0 p-0 items-center">
                       <p className="text-danger pr-2 m-0">Multiple Modules</p> |
                       <p className="font-bold pl-2 m-0">
@@ -110,7 +121,12 @@ export default function Assignments() {
                   <BsGripVertical className="me-2 fs-3" />
                   <LuNotepadText size={36} className="pr-2" />
                   <div>
-                    <p className="font-bold m-0">Final</p>
+                    <Link
+                      href="/courses/1234/assignments/123"
+                      className="font-bold m-0 text-black"
+                    >
+                      Final
+                    </Link>
                     <span className="d-flex flex-row m-0 p-0 items-center">
                       <p className="text-danger pr-2 m-0">Multiple Modules</p> |
                       <p className="font-bold pl-2 m-0">
@@ -136,50 +152,3 @@ export default function Assignments() {
     </div>
   );
 }
-
-// <div id="wd-assignments">
-//   <input placeholder="Search for Assignments" id="wd-search-assignment" />
-//   <button id="wd-add-assignment-group">+ Group</button>
-//   <button id="wd-add-assignment">+ Assignment</button>
-//   <h3 id="wd-assignments-title">
-//     ASSIGNMENTS 40% of Total <button>+</button>{" "}
-//   </h3>
-//   <ul id="wd-assignment-list">
-//     <li className="wd-assignment-list-item">
-//       <Link
-//         href="/courses/1234/assignments/123"
-//         className="wd-assignment-link"
-//       >
-//         A1 - ENV + HTML
-//       </Link>
-//       <br />
-//       Multiple modules | <strong>Not available until</strong> May 6 at
-//       12:00am | <br />
-//       <strong>Due</strong> May 13 at 11:59 pm | 100 pts
-//     </li>
-//     <li className="wd-assignment-list-item">
-//       <Link
-//         href="/courses/1234/assignments/124"
-//         className="wd-assignment-link"
-//       >
-//         A2 - CSS + BOOTSTRAP
-//       </Link>
-//       <br />
-//       Multiple modules | <strong>Not available until</strong> May 13 at
-//       12:00am | <br />
-//       <strong>Due</strong> May 20 at 11:59 pm | 100 pts
-//     </li>
-//     <li className="wd-assignment-list-item">
-//       <Link
-//         href="/courses/1234/assignments/125"
-//         className="wd-assignment-link"
-//       >
-//         A3 - JavaScript + React
-//       </Link>
-//       <br />
-//       Multiple modules | <strong>Not available until</strong> May 20 at
-//       12:00am | <br />
-//       <strong>Due</strong> May 27 at 11:59 pm | 100 pts
-//     </li>
-//   </ul>
-// </div>

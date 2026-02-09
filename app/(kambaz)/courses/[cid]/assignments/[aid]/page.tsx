@@ -12,6 +12,9 @@ import {
   Button,
 } from "react-bootstrap";
 
+import { MdOutlineEditCalendar } from "react-icons/md";
+import InputGroupText from "react-bootstrap/esm/InputGroupText";
+
 export default function AssignmentEditor() {
   return (
     <div id="assignment-editor" className="w-50">
@@ -88,6 +91,69 @@ export default function AssignmentEditor() {
           </div>
         </Col>
       </Row>
+      <br />
+      <Row>
+        <FormLabel column sm={2}>
+          {" "}
+          Assign:{" "}
+        </FormLabel>
+        <Col sm={10}>
+          <div className="outline outline-1 outline-black p-3">
+            <p className="font-bold pt-3 pb-2 m-0">Assign to</p>
+            <FormControl type="text m-0 p-2" defaultValue={"Everyone"} />
+            <br />
+            <p className="font-bold pt-3 pb-2 m-0">Due</p>
+            <InputGroup>
+              <FormControl type="text m-0 p-2" />
+              <InputGroupText>
+                <MdOutlineEditCalendar />
+              </InputGroupText>
+            </InputGroup>
+
+            <span className="d-flex flex-row">
+              <div className="flex-grow pr-2">
+                <p className="font-bold pt-3 pb-2 m-0">Available from</p>
+                <InputGroup>
+                  <FormControl type="text m-0 p-2" />
+                  <InputGroupText>
+                    <MdOutlineEditCalendar />
+                  </InputGroupText>
+                </InputGroup>
+              </div>
+              <div className="flex-grow pl-2">
+                <p className="font-bold pt-3 pb-2 m-0">Until</p>
+                <InputGroup>
+                  <FormControl type="text m-0 p-2" />
+                  <InputGroupText>
+                    <MdOutlineEditCalendar />
+                  </InputGroupText>
+                </InputGroup>
+              </div>
+            </span>
+
+            <br />
+          </div>
+        </Col>
+      </Row>
+      <br />
+      <span className="d-flex flex-row float-end">
+        <Button
+          variant="secondary"
+          size="lg"
+          className="me-1 float-end d-flex flex-row items-center"
+          id="wd-add-group-btn"
+        >
+          Cancel
+        </Button>
+        <Button
+          variant="danger"
+          size="lg"
+          className="me-1 float-end d-flex flex-row items-center"
+          id="wd-add-assignment-btn"
+        >
+          Save
+        </Button>
+      </span>
     </div>
   );
 }
