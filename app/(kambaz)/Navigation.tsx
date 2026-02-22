@@ -1,3 +1,4 @@
+"use client";
 import {
   AiOutlineCalendar,
   AiOutlineDashboard,
@@ -8,8 +9,18 @@ import { IoCalendarOutline } from "react-icons/io5";
 import { LiaBookSolid, LiaCogSolid } from "react-icons/lia";
 import { FaInbox, FaRegCircleUser } from "react-icons/fa6";
 import { ListGroup, ListGroupItem } from "react-bootstrap";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 export default function KambazNavigation() {
+  const pathname = usePathname();
+  const links = [
+    { label: "Dashboard", path: "/dashboard", icon: AiOutlineDashboard },
+    { label: "Courses", path: "/dashboard", icon: LiaBookSolid },
+    { label: "Calendar", path: "/Calendar", icon: IoCalendarOutline },
+    { label: "Inbox", path: "/Inbox", icon: FaInbox },
+    { label: "Labs", path: "/labs", icon: LiaCogSolid },
+  ];
+
   return (
     <div id="wd-kambaz-navigation">
       <ListGroup
@@ -30,69 +41,37 @@ export default function KambazNavigation() {
             alt="Northeastern University"
           />
         </ListGroupItem>
-        <br />
-        <ListGroupItem className="border-0 bg-black text-center d-flex justify-content-center">
-          <Link
-            href="/account"
-            id="wd-account-link"
-            className="text-white text-decoration-none"
-          >
-            <FaRegCircleUser className="fs-1 text-white w-100" />
-            <br />
-            Account
-          </Link>
+        <ListGroupItem
+          as={Link}
+          href="/account"
+          className={`text-center border-0 bg-black d-flex justify-content-center flex-column text-center
+            ${pathname.includes("Account") ? "bg-white text-danger" : "bg-black text-white"}`}
+        >
+          <div className="d-flex flex-grow justify-content-center">
+            <FaRegCircleUser
+              className={`fs-1 ${pathname.includes("account") ? "text-danger" : "text-white"}`}
+            />
+          </div>
+          <br />
+          Account
         </ListGroupItem>
-        <br />
-        <ListGroupItem className="border-0 bg-white text-center d-flex justify-content-center">
-          <Link
-            href="/dashboard"
-            id="wd-dashboard-link"
-            className="text-danger text-decoration-none"
+        {links.map((link, index) => (
+          <ListGroupItem
+            key={index}
+            as={Link}
+            href={link.path}
+            className={`bg-black text-center border-0 d-flex justify-content-center flex-column text-center
+            ${pathname.includes(link.label.toLowerCase()) ? "text-danger bg-white" : "text-white bg-black"}`}
           >
-            <AiOutlineDashboard className="fs-1 text-danger w-100" />
+            {
+              <div className="d-flex flex-grow justify-content-center">
+                {link.icon({ className: "fs-1 text-danger" })}
+              </div>
+            }
             <br />
-            Dashboard
-          </Link>
-        </ListGroupItem>
-        <br />
-        <ListGroupItem className="border-0 bg-black text-center d-flex justify-content-center">
-          <Link
-            href="/calendar"
-            id="wd-calendar-link"
-            className="text-white text-decoration-none"
-          >
-            <AiOutlineCalendar className="fs-1 text-white w-100" />
-            <br />
-            Calendar
-          </Link>
-        </ListGroupItem>
-        <br />
-        <ListGroupItem className="border-0 bg-black text-center d-flex justify-content-center">
-          <Link
-            href="/inbox"
-            id="wd-inbox-link"
-            className="text-white text-decoration-none"
-          >
-            <AiOutlineInbox className="fs-1 text-white w-100" />
-            <br />
-            Inbox
-          </Link>
-        </ListGroupItem>
-        <br />
-        <ListGroupItem className="border-0 bg-black text-center d-flex justify-content-center">
-          <Link
-            href="/labs"
-            id="wd-labs-link"
-            className="text-white text-decoration-none"
-          >
-            <AiOutlineSetting className="fs-1 text-white w-100" />
-            <br />
-            Labs
-          </Link>
-        </ListGroupItem>
-        <br />
-        <br />
-        {/* complete styling the rest of the links */}
+            {link.label}
+          </ListGroupItem>
+        ))}
       </ListGroup>
       {/* <a href="https://www.northeastern.edu/" id="wd-neu-link" target="_blank">
         Northeastern
