@@ -1,4 +1,4 @@
-//import { redirect } from "next/dist/server/api-utils";
+"use client";
 
 import {
   Form,
@@ -14,14 +14,26 @@ import {
 
 import { MdOutlineEditCalendar } from "react-icons/md";
 import InputGroupText from "react-bootstrap/esm/InputGroupText";
+import { useParams } from "next/navigation";
+import { assignments } from "@/app/(kambaz)/database";
 
 export default function AssignmentEditor() {
+  const { cid, aid } = useParams();
+
+  const assignment = assignments.find(
+    (a: any) => a._id === aid && a.course === cid,
+  );
+
   return (
     <div id="assignment-editor" className="w-50">
       <FormLabel>Assignment name:</FormLabel>
-      <FormControl type="text" />
+      <FormControl type="text" defaultValue={assignment?.name || ""} />
       <br />
-      <FormControl as="textarea" rows={5} />
+      <FormControl
+        as="textarea"
+        rows={5}
+        defaultValue={assignment?.description || ""}
+      />
       <br />
       <Row>
         <FormLabel column sm={2}>
@@ -29,7 +41,7 @@ export default function AssignmentEditor() {
           Points{" "}
         </FormLabel>
         <Col sm={10}>
-          <FormControl type="text" defaultValue="100" />
+          <FormControl type="text" defaultValue={assignment?.points || 100} />
         </Col>
       </Row>
       <br />
@@ -39,7 +51,9 @@ export default function AssignmentEditor() {
           Assignment Group{" "}
         </FormLabel>
         <Col sm={10}>
-          <FormSelect>
+          <FormSelect defaultValue={assignment?.homeModule || ""}>
+            {" "}
+            {/* Assuming we'll implement this in a later assignment when the course database is a bit more fleshed out */}
             <option value="0" defaultChecked>
               ASSIGNMENTS
             </option>
@@ -104,7 +118,14 @@ export default function AssignmentEditor() {
             <br />
             <p className="font-bold pt-3 pb-2 m-0">Due</p>
             <InputGroup>
-              <FormControl type="text m-0 p-2" />
+              <FormControl
+                defaultValue={
+                  assignment?.dueDate
+                    ? `${assignment?.dueDate} at ${assignment?.dueTime}`
+                    : ""
+                }
+                type="text m-0 p-2"
+              />
               <InputGroupText>
                 <MdOutlineEditCalendar />
               </InputGroupText>
@@ -114,7 +135,14 @@ export default function AssignmentEditor() {
               <div className="flex-grow pr-2">
                 <p className="font-bold pt-3 pb-2 m-0">Available from</p>
                 <InputGroup>
-                  <FormControl type="text m-0 p-2" />
+                  <FormControl
+                    defaultValue={
+                      assignment?.availableDate
+                        ? `${assignment?.availableDate} at ${assignment?.availableTime}`
+                        : ""
+                    }
+                    type="text m-0 p-2"
+                  />
                   <InputGroupText>
                     <MdOutlineEditCalendar />
                   </InputGroupText>
@@ -123,7 +151,14 @@ export default function AssignmentEditor() {
               <div className="flex-grow pl-2">
                 <p className="font-bold pt-3 pb-2 m-0">Until</p>
                 <InputGroup>
-                  <FormControl type="text m-0 p-2" />
+                  <FormControl
+                    defaultValue={
+                      assignment?.availableDate
+                        ? `${assignment?.availableUntilDate} at ${assignment?.availableUntilTime}`
+                        : ""
+                    }
+                    type="text m-0 p-2"
+                  />
                   <InputGroupText>
                     <MdOutlineEditCalendar />
                   </InputGroupText>
@@ -142,6 +177,7 @@ export default function AssignmentEditor() {
           size="lg"
           className="me-1 float-end d-flex flex-row items-center"
           id="wd-add-group-btn"
+          href={`/courses/${cid}/assignments/`}
         >
           Cancel
         </Button>
@@ -150,6 +186,7 @@ export default function AssignmentEditor() {
           size="lg"
           className="me-1 float-end d-flex flex-row items-center"
           id="wd-add-assignment-btn"
+          href={`/courses/${cid}/assignments/`}
         >
           Save
         </Button>

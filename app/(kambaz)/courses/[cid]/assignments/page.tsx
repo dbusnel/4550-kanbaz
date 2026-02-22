@@ -14,8 +14,21 @@ import { FaPlus } from "react-icons/fa";
 import { IoIosSearch } from "react-icons/io";
 import { LuNotepadText } from "react-icons/lu";
 import { BsGripVertical } from "react-icons/bs";
+import { assignments } from "@/app/(kambaz)/database";
+import { useParams } from "next/navigation";
+
+function isAssignmentAvailable(assignment: any) {
+  const now = new Date();
+  const availableDate = new Date(assignment.availableDate);
+  return now >= availableDate;
+}
 
 export default function Assignments() {
+  const { cid } = useParams();
+  const assignmentsToUse = assignments.filter(
+    (assignment: any) => assignment.course === cid,
+  );
+
   return (
     <div className="d-flex flex-column">
       <span className="d-flex flex-row">
@@ -62,34 +75,55 @@ export default function Assignments() {
               Week 1 <ModuleControlButtons />
             </div>
             <ListGroup className="wd-lessons rounded-0">
-              <ListGroupItem className="wd-lesson p-3 ps-1 d-flex flex-row items-center">
-                <div className="d-flex flex-row items-center">
-                  <BsGripVertical className="me-2 fs-3" />
-                  <LuNotepadText size={36} className="pr-2" />
-                  <div>
-                    <Link
-                      href="/courses/1234/assignments/123"
-                      className="font-bold m-0 text-black"
-                    >
-                      Assignment 1
-                    </Link>
-                    <span className="d-flex flex-row m-0 p-0 items-center">
-                      <p className="text-danger pr-2 m-0">Multiple Modules</p> |
-                      <p className="font-bold pl-2 m-0">
-                        Not available until:{" "}
-                      </p>
-                      <p className="pl-2 m-0">February 9th at 12:00 AM </p>
-                    </span>
-                    <span className="d-flex flex-row m-0 p-0 items-center">
-                      <p className="font-black m-0">Due</p>
-                      <p className="pl-2 pr-2 m-0">May 13th at 11:59 PM </p> |
-                      <p className="pl-2 m-0">400 pts </p>
-                    </span>
+              {assignmentsToUse.map((assignment: any, index: number) => (
+                <ListGroupItem
+                  key={assignment._id}
+                  className="wd-lesson p-3 ps-1 d-flex flex-row items-center"
+                >
+                  <div className="d-flex flex-row items-center">
+                    <BsGripVertical className="me-2 fs-3" />
+                    <LuNotepadText size={36} className="pr-2" />
+                    <div>
+                      <Link
+                        href={`/courses/${assignment.course}/assignments/${assignment._id}`}
+                        className="font-bold m-0 text-black"
+                      >
+                        {assignment.name}
+                      </Link>
+                      <span className="d-flex flex-row m-0 p-0 items-center">
+                        <p className="text-danger pr-2 m-0">
+                          {assignment.module || "Multiple modules"}
+                        </p>{" "}
+                        |
+                        <p className="font-bold pl-2 m-0">
+                          {isAssignmentAvailable(assignment)
+                            ? "Available:"
+                            : "Not available until:"}{" "}
+                        </p>
+                        <p className="pl-2 m-0">{assignment.availableDate}</p>
+                      </span>
+                      <span className="d-flex flex-row m-0 p-0 items-center">
+                        <p className="font-black m-0">Due</p>
+                        <p className="pl-2 pr-2 m-0">
+                          {`${assignment.dueDate} at ${assignment.dueTime}`}{" "}
+                        </p>{" "}
+                        |<p className="pl-2 m-0">{assignment.points} pts </p>
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <LessonControlButtons />
-              </ListGroupItem>
-              <ListGroupItem className="wd-lesson p-3 ps-1 d-flex flex-row items-center">
+                  <LessonControlButtons />
+                </ListGroupItem>
+              ))}
+            </ListGroup>
+          </ListGroupItem>
+        </ListGroup>
+      </div>
+    </div>
+  );
+}
+
+// Old implementation
+/* <ListGroupItem className="wd-lesson p-3 ps-1 d-flex flex-row items-center">
                 <div className="d-flex flex-row items-center">
                   <BsGripVertical className="me-2 fs-3" />
                   <LuNotepadText size={36} className="pr-2" />
@@ -144,11 +178,4 @@ export default function Assignments() {
                   </div>
                 </div>
                 <LessonControlButtons />
-              </ListGroupItem>
-            </ListGroup>
-          </ListGroupItem>
-        </ListGroup>
-      </div>
-    </div>
-  );
-}
+              </ListGroupItem> */
