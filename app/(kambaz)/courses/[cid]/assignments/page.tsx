@@ -97,7 +97,7 @@ export default function Assignments() {
         <ListGroup className="rounded-0 flex-grow pr-16 w-250" id="wd-modules">
           <ListGroupItem className="wd-module p-0 mb-5 fs-5 border-gray">
             <div className="wd-title p-3 ps-2 bg-secondary d-flex flex-row">
-              Week 1 <ModuleControlButtons />
+              Week 1{" "}
             </div>
             <ListGroup className="wd-lessons rounded-0">
               {assignments
