@@ -85,6 +85,7 @@ export default function Dashboard() {
     fetchCourses();
   }, [currentUser]);
 
+
   if (!currentUser) {
     return (
       <div id="wd-dashboard">
