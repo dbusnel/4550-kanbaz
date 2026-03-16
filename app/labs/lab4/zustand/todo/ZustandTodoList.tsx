@@ -1,6 +1,6 @@
 "use client";
 import { ListGroup, ListGroupItem, FormControl, Button } from "react-bootstrap";
-import { useTodoStore } from "./useTodoStore";
+import { useTodoStore } from "./useTodoStoreState";
 import { useState } from "react";
 
 export default function ZustandTodoList() {

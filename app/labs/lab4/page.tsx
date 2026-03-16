@@ -16,31 +16,34 @@ import Link from "next/link";
 import ReduxExamples from "./redux/page";
 import CounterRedux from "./redux/CounterRedux";
 import AddRedux from "./redux/AddRedux";
+import { Suspense } from "react";
 
 export default function Lab4() {
   function sayHello() {
     alert("Hello");
   }
   return (
-    <Provider store={store}>
-      <div className="flex-grow">
-        <h1>Lab 4</h1>
-        <Link href="./lab4/redux">Redux Examples</Link>
-        <br />
-        <Link href="./lab4/react-context">React Context Examples</Link>
-        <br />
-        <Link href="./lab4/zustand">Zustand Examples</Link>
-        <ClickEvent />
-        <PassingDataOnEvent />
-        <PassingFunctions theFunction={sayHello} />
-        <Counter />
-        <BooleanStateVariables />
-        <StringStateVariables />
-        <DateStateVariable />
-        <ObjectStateVariable />
-        <ArrayStateVariable />
-        <ParentStateComponent />
-      </div>
-    </Provider>
+    <Suspense>
+      <Provider store={store}>
+        <div className="flex-grow">
+          <h1>Lab 4</h1>
+          <Link href="./lab4/redux">Redux Examples</Link>
+          <br />
+          <Link href="./lab4/react-context">React Context Examples</Link>
+          <br />
+          <Link href="./lab4/zustand">Zustand Examples</Link>
+          <ClickEvent />
+          <PassingDataOnEvent />
+          <PassingFunctions theFunction={sayHello} />
+          <Counter />
+          <BooleanStateVariables />
+          <StringStateVariables />
+          <DateStateVariable />
+          <ObjectStateVariable />
+          <ArrayStateVariable />
+          <ParentStateComponent />
+        </div>
+      </Provider>
+    </Suspense>
   );
 }
