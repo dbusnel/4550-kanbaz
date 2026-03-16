@@ -24,11 +24,15 @@ import {
 import { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
+interface User {
+  _id: string;
+}
+
 export default function Dashboard() {
   const { courses } = useSelector((state: RootState) => state.coursesReducer);
   const { currentUser } = useSelector(
     (state: RootState) => state.accountReducer,
-  );
+  ) as { currentUser: User | null };
   const { enrollments } = db;
   const dispatch = useDispatch();
   const [course, setCourse] = useState<any>({
@@ -41,7 +45,7 @@ export default function Dashboard() {
     description: "New Description",
   });
 
-  if (!currentUser) {
+  if (!currentUser || currentUser._id) {
     return (
       <div id="wd-dashboard">
         <h1 id="wd-dashboard-title">Dashboard</h1> <hr />

@@ -1,5 +1,5 @@
 import ZustandCounter from "./counter";
-import ZustandTodoList from "./todo/zustandTodoList";
+import ZustandTodoList from "./todo/ZustandTodoList";
 export default function ZustandExamples() {
   return (
     <div>
