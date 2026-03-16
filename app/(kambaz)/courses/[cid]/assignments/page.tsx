@@ -15,7 +15,17 @@ import { IoIosSearch } from "react-icons/io";
 import { LuNotepadText } from "react-icons/lu";
 import { BsGripVertical } from "react-icons/bs";
 import { assignments } from "@/app/(kambaz)/database";
-import { useParams } from "next/navigation";
+import { redirect, useParams } from "next/navigation";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  addAssignment,
+  editAssignment,
+  updateAssignment,
+  deleteAssignment,
+} from "./reducer";
+import { v4 as uuidv4 } from "uuid";
+import { RootState } from "../../../store";
+import { FaTrashAlt } from "react-icons/fa";
 
 function isAssignmentAvailable(assignment: any) {
   const now = new Date();
@@ -25,9 +35,11 @@ function isAssignmentAvailable(assignment: any) {
 
 export default function Assignments() {
   const { cid } = useParams();
-  const assignmentsToUse = assignments.filter(
-    (assignment: any) => assignment.course === cid,
+
+  const { assignments } = useSelector(
+    (state: RootState) => state.assignmentReducer,
   );
+  const dispatch = useDispatch();
 
   return (
     <div className="d-flex flex-column">
@@ -55,6 +67,19 @@ export default function Assignments() {
         <Button
           variant="danger"
           size="lg"
+          onClick={() => {
+            // Make a new assignment then naviagate to its edit page
+            // Note: I'm 99% this works but the redirect back to the assignments page repopulates the form with database info (i assume we'll eventually add on to this to add the new assignment to the database!)
+            const newAssignment = {
+              name: "New Assignment",
+              course: cid,
+              id: uuidv4(),
+            };
+            dispatch(addAssignment(newAssignment));
+            console.log(assignments);
+
+            redirect(`/courses/${cid}/assignments/${newAssignment.id}`);
+          }}
           className="me-1 float-end d-flex flex-row items-center"
           id="wd-add-assignment-btn"
         >
@@ -75,45 +100,50 @@ export default function Assignments() {
               Week 1 <ModuleControlButtons />
             </div>
             <ListGroup className="wd-lessons rounded-0">
-              {assignmentsToUse.map((assignment: any, index: number) => (
-                <ListGroupItem
-                  key={assignment._id}
-                  className="wd-lesson p-3 ps-1 d-flex flex-row items-center"
-                >
-                  <div className="d-flex flex-row items-center">
-                    <BsGripVertical className="me-2 fs-3" />
-                    <LuNotepadText size={36} className="pr-2" />
-                    <div>
-                      <Link
-                        href={`/courses/${assignment.course}/assignments/${assignment._id}`}
-                        className="font-bold m-0 text-black"
-                      >
-                        {assignment.name}
-                      </Link>
-                      <span className="d-flex flex-row m-0 p-0 items-center">
-                        <p className="text-danger pr-2 m-0">
-                          {assignment.module || "Multiple modules"}
-                        </p>{" "}
-                        |
-                        <p className="font-bold pl-2 m-0">
-                          {isAssignmentAvailable(assignment)
-                            ? "Available:"
-                            : "Not available until:"}{" "}
-                        </p>
-                        <p className="pl-2 m-0">{assignment.availableDate}</p>
-                      </span>
-                      <span className="d-flex flex-row m-0 p-0 items-center">
-                        <p className="font-black m-0">Due</p>
-                        <p className="pl-2 pr-2 m-0">
-                          {`${assignment.dueDate} at ${assignment.dueTime}`}{" "}
-                        </p>{" "}
-                        |<p className="pl-2 m-0">{assignment.points} pts </p>
-                      </span>
+              {assignments
+                .filter((assignment: any) => assignment.course === cid)
+                .map((assignment: any, index: number) => (
+                  <ListGroupItem
+                    key={assignment._id}
+                    className="wd-lesson p-3 ps-1 d-flex flex-row items-center"
+                  >
+                    <div className="d-flex flex-row items-center">
+                      <BsGripVertical className="me-2 fs-3" />
+                      <LuNotepadText size={36} className="pr-2" />
+                      <div>
+                        <Link
+                          href={`/courses/${assignment.course}/assignments/${assignment._id}`}
+                          className="font-bold m-0 text-black"
+                        >
+                          {assignment.name}
+                        </Link>
+                        <span className="d-flex flex-row m-0 p-0 items-center">
+                          <p className="text-danger pr-2 m-0">
+                            {assignment.module || "Multiple modules"}
+                          </p>{" "}
+                          |
+                          <p className="font-bold pl-2 m-0">
+                            {isAssignmentAvailable(assignment)
+                              ? "Available:"
+                              : "Not available until:"}{" "}
+                          </p>
+                          <p className="pl-2 m-0">{assignment.availableDate}</p>
+                        </span>
+                        <span className="d-flex flex-row m-0 p-0 items-center">
+                          <p className="font-black m-0">Due</p>
+                          <p className="pl-2 pr-2 m-0">
+                            {`${assignment.dueDate} at ${assignment.dueTime}`}{" "}
+                          </p>{" "}
+                          |<p className="pl-2 m-0">{assignment.points} pts </p>
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                  <LessonControlButtons />
-                </ListGroupItem>
-              ))}
+                    <LessonControlButtons />
+                    <FaTrashAlt
+                      onClick={() => dispatch(deleteAssignment(assignment._id))}
+                    />
+                  </ListGroupItem>
+                ))}
             </ListGroup>
           </ListGroupItem>
         </ListGroup>

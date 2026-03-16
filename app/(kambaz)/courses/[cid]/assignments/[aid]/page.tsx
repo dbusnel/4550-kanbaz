@@ -12,13 +12,28 @@ import {
   Button,
 } from "react-bootstrap";
 
+import {
+  addAssignment,
+  editAssignment,
+  updateAssignment,
+  deleteAssignment,
+} from "../reducer";
+
 import { MdOutlineEditCalendar } from "react-icons/md";
 import InputGroupText from "react-bootstrap/esm/InputGroupText";
 import { useParams } from "next/navigation";
 import { assignments } from "@/app/(kambaz)/database";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "../../../../store";
+import { redirect } from "next/navigation";
 
 export default function AssignmentEditor() {
   const { cid, aid } = useParams();
+
+  const { assignments } = useSelector(
+    (state: RootState) => state.assignmentReducer,
+  );
+  const dispatch = useDispatch();
 
   const assignment = assignments.find(
     (a: any) => a._id === aid && a.course === cid,
@@ -27,11 +42,16 @@ export default function AssignmentEditor() {
   return (
     <div id="assignment-editor" className="w-50">
       <FormLabel>Assignment name:</FormLabel>
-      <FormControl type="text" defaultValue={assignment?.name || ""} />
+      <FormControl
+        type="text"
+        id="assignment-name"
+        defaultValue={assignment?.name || ""}
+      />
       <br />
       <FormControl
         as="textarea"
         rows={5}
+        id="assignment-description"
         defaultValue={assignment?.description || ""}
       />
       <br />
@@ -41,7 +61,11 @@ export default function AssignmentEditor() {
           Points{" "}
         </FormLabel>
         <Col sm={10}>
-          <FormControl type="text" defaultValue={assignment?.points || 100} />
+          <FormControl
+            type="text"
+            id="assignment-points"
+            defaultValue={assignment?.points || 100}
+          />
         </Col>
       </Row>
       <br />
@@ -125,6 +149,7 @@ export default function AssignmentEditor() {
                     : ""
                 }
                 type="text m-0 p-2"
+                id="assignment-due"
               />
               <InputGroupText>
                 <MdOutlineEditCalendar />
@@ -141,6 +166,7 @@ export default function AssignmentEditor() {
                         ? `${assignment?.availableDate} at ${assignment?.availableTime}`
                         : ""
                     }
+                    id="assignment-from"
                     type="text m-0 p-2"
                   />
                   <InputGroupText>
@@ -158,6 +184,7 @@ export default function AssignmentEditor() {
                         : ""
                     }
                     type="text m-0 p-2"
+                    id="assignment-until"
                   />
                   <InputGroupText>
                     <MdOutlineEditCalendar />
@@ -187,6 +214,37 @@ export default function AssignmentEditor() {
           className="me-1 float-end d-flex flex-row items-center"
           id="wd-add-assignment-btn"
           href={`/courses/${cid}/assignments/`}
+          onClick={() => {
+            const newAssignment = {
+              name: (
+                document.getElementById("assignment-name") as HTMLInputElement
+              ).value,
+              description: (
+                document.getElementById(
+                  "assignment-description",
+                ) as HTMLInputElement
+              ).value,
+              points: Number(
+                (
+                  document.getElementById(
+                    "assignment-points",
+                  ) as HTMLInputElement
+                ).value,
+              ),
+              dueDate: (
+                document.getElementById("assignment-due") as HTMLInputElement
+              ).value,
+              availableFromDate: (
+                document.getElementById("assignment-from") as HTMLInputElement
+              ).value,
+              availableUntilDate: (
+                document.getElementById("assignment-until") as HTMLInputElement
+              ).value,
+              _id: aid,
+            };
+            dispatch(updateAssignment({ ...assignment, ...newAssignment }));
+            redirect(`/courses/${cid}/assignments/`);
+          }}
         >
           Save
         </Button>

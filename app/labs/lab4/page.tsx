@@ -25,12 +25,11 @@ export default function Lab4() {
     <Provider store={store}>
       <div className="flex-grow">
         <h1>Lab 4</h1>
-        <Link href="./lab4/redux">Redux Examples</Link>{" "}
-        {/* Maybe I misunderstood, but I'm not sure why the instructions have us make this link then put the examples on this page anyway */}
-        {/* continue at page 19*/}
-        <ReduxExamples />
-        <CounterRedux />
-        <AddRedux />
+        <Link href="./lab4/redux">Redux Examples</Link>
+        <br />
+        <Link href="./lab4/react-context">React Context Examples</Link>
+        <br />
+        <Link href="./lab4/zustand">Zustand Examples</Link>
         <ClickEvent />
         <PassingDataOnEvent />
         <PassingFunctions theFunction={sayHello} />
