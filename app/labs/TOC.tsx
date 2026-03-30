@@ -61,6 +61,22 @@ export default function TOC() {
           GitHub
         </NavLink>
       </NavItem>
+      <NavItem>
+        <NavLink
+          href="https://github.com/dbusnel/kambaz-node-server-app"
+          id="wd-github-backend"
+        >
+          Back-end GitHub
+        </NavLink>
+      </NavItem>
+      <NavItem>
+        <NavLink
+          href="https://kambaz-node-server-app-pplx.onrender.com/"
+          id="wd-backend-deployment"
+        >
+          Back-end Deployment
+        </NavLink>
+      </NavItem>
     </Nav>
   );
 }
