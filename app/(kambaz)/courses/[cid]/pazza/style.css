@@ -1,0 +1,10 @@
+.link-unselected {
+  font-size: 18px;
+  color: white;
+}
+
+.link-selected > .link-unselected {
+  font-size: 18px;
+  color: white;
+  font-weight: bold;
+}
