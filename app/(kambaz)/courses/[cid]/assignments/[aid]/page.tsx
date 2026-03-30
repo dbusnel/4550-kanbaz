@@ -17,7 +17,10 @@ import {
   editAssignment,
   updateAssignment,
   deleteAssignment,
+  setAssignments,
 } from "../reducer";
+
+import * as client from "../../../client";
 
 import { MdOutlineEditCalendar } from "react-icons/md";
 import InputGroupText from "react-bootstrap/esm/InputGroupText";
@@ -214,7 +217,7 @@ export default function AssignmentEditor() {
           className="me-1 float-end d-flex flex-row items-center"
           id="wd-add-assignment-btn"
           href={`/courses/${cid}/assignments/`}
-          onClick={() => {
+          onClick={async () => {
             const newAssignment = {
               name: (
                 document.getElementById("assignment-name") as HTMLInputElement
@@ -242,7 +245,11 @@ export default function AssignmentEditor() {
               ).value,
               _id: aid,
             };
-            dispatch(updateAssignment({ ...assignment, ...newAssignment }));
+            await client.updateAssignment(newAssignment);
+            const newAssignments = assignments.map((a: any) =>
+              a._id === newAssignment._id ? newAssignment : a,
+            );
+            dispatch(setAssignments(newAssignments));
             redirect(`/courses/${cid}/assignments/`);
           }}
         >

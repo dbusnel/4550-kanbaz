@@ -15,17 +15,20 @@ import { IoIosSearch } from "react-icons/io";
 import { LuNotepadText } from "react-icons/lu";
 import { BsGripVertical } from "react-icons/bs";
 import { assignments } from "@/app/(kambaz)/database";
-import { redirect, useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import {
   addAssignment,
   editAssignment,
   updateAssignment,
   deleteAssignment,
+  setAssignments,
 } from "./reducer";
 import { v4 as uuidv4 } from "uuid";
+import { useEffect } from "react";
 import { RootState } from "../../../store";
 import { FaTrashAlt } from "react-icons/fa";
+import * as client from "../../client";
 
 function isAssignmentAvailable(assignment: any) {
   const now = new Date();
@@ -40,6 +43,15 @@ export default function Assignments() {
     (state: RootState) => state.assignmentReducer,
   );
   const dispatch = useDispatch();
+  const router = useRouter();
+
+  useEffect(() => {
+    const fetchAssignments = async () => {
+      const data = await client.findAssignmentsForCourse(cid as string);
+      dispatch(setAssignments(data));
+    };
+    fetchAssignments();
+  }, [cid]);
 
   return (
     <div className="d-flex flex-column">
@@ -67,18 +79,16 @@ export default function Assignments() {
         <Button
           variant="danger"
           size="lg"
-          onClick={() => {
-            // Make a new assignment then naviagate to its edit page
-            // Note: I'm 99% this works but the redirect back to the assignments page repopulates the form with database info (i assume we'll eventually add on to this to add the new assignment to the database!)
-            const newAssignment = {
-              name: "New Assignment",
-              course: cid,
-              id: uuidv4(),
-            };
-            dispatch(addAssignment(newAssignment));
-            console.log(assignments);
+          onClick={async () => {
+            // Make a new assignment then send to the server
 
-            redirect(`/courses/${cid}/assignments/${newAssignment.id}`);
+            const newAssignment = await client.createAssignmentForCourse(
+              cid as string,
+              { name: "New Assignment", course: cid },
+            );
+
+            dispatch(setAssignments([...assignments, newAssignment]));
+            router.push(`/courses/${cid}/assignments/${newAssignment._id}`);
           }}
           className="me-1 float-end d-flex flex-row items-center"
           id="wd-add-assignment-btn"
@@ -140,7 +150,16 @@ export default function Assignments() {
                     </div>
                     <LessonControlButtons />
                     <FaTrashAlt
-                      onClick={() => dispatch(deleteAssignment(assignment._id))}
+                      onClick={async () => {
+                        await client.deleteAssignment(assignment._id);
+                        dispatch(
+                          setAssignments(
+                            assignments.filter(
+                              (a: any) => a._id !== assignment._id,
+                            ),
+                          ),
+                        );
+                      }}
                     />
                   </ListGroupItem>
                 ))}
