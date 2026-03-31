@@ -1,52 +1,63 @@
 "use client";
 import { useParams } from "next/navigation";
+import { useSelector } from "react-redux";
+import { RootState } from "../../../../store";
+import * as client from "../../../client";
+import { useEffect, useState } from "react";
 
-const MOCK_POSTS = [
-  {
-    id: "1",
-    title: "When is the midterm?",
-    category: "logistics",
-    unread: true,
-    answered: false,
-  },
-  {
-    id: "2",
-    title: "HW3 problem 4 clarification",
-    category: "homework",
-    unread: true,
-    answered: true,
-  },
-  {
-    id: "3",
-    title: "Office hours this week",
-    category: "announcements",
-    unread: false,
-    answered: true,
-  },
-  {
-    id: "4",
-    title: "Study group for final exam",
-    category: "general",
-    unread: false,
-    answered: false,
-  },
-  {
-    id: "5",
-    title: "Lecture slides posted?",
-    category: "logistics",
-    unread: false,
-    answered: true,
-  },
-];
+interface userInfo {
+  firstName: string;
+  lastName: string;
+  _id: string;
+}
 
 export default function PazzaPost() {
-  const { pid } = useParams();
-  const postToDisplay = MOCK_POSTS.find((post) => post.id === pid);
-  console.log("ID:" + pid);
+  const { cid, pid } = useParams();
+
+  const { currentUser } = useSelector(
+    (state: RootState) => state.accountReducer,
+  );
+
+  const [displayPost, setDisplayPost] = useState();
+
+  const nameInfo: userInfo = { firstName: "", lastName: "", _id: "" };
+  if (
+    currentUser !== null &&
+    "firstName" in currentUser &&
+    "lastName" in currentUser &&
+    "_id" in currentUser
+  ) {
+    const user = currentUser as {
+      firstName: string;
+      lastName: string;
+      _id: string;
+    };
+    nameInfo.firstName = user.firstName;
+    nameInfo.lastName = user.lastName;
+    nameInfo._id = user._id;
+  }
+
+  useEffect(() => {
+    const fetchPost = async () => {
+      if (pid === undefined || cid === undefined) return undefined;
+      const post = await client.getPostById(
+        cid as string,
+        nameInfo._id,
+        pid as string,
+      );
+      setDisplayPost(post);
+    };
+    fetchPost();
+  }, [cid, nameInfo._id, pid]);
+
+  if (displayPost === undefined) {
+    return <h1>Loading...</h1>;
+  }
+
   return (
     <div>
-      <h1>{postToDisplay?.title}</h1>
-      <p>body example</p>
+      <h1>{displayPost.summary}</h1>
+      <p>{displayPost.details}</p>
     </div>
   );
 }

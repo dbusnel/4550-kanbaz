@@ -11,49 +11,15 @@ import "./style.css";
 import { FaCircleUser } from "react-icons/fa6";
 import { useSelector, UseSelector } from "react-redux";
 import { RootState } from "../../../store";
+import * as client from "../../client";
+import { useState, useEffect } from "react";
+import { userInfo } from "os";
 
 interface userInfo {
   firstName: string;
   lastName: string;
+  _id: string;
 }
-
-const MOCK_POSTS = [
-  {
-    id: "1",
-    title: "When is the midterm?",
-    category: "logistics",
-    unread: true,
-    answered: false,
-  },
-  {
-    id: "2",
-    title: "HW3 problem 4 clarification",
-    category: "homework",
-    unread: true,
-    answered: true,
-  },
-  {
-    id: "3",
-    title: "Office hours this week",
-    category: "announcements",
-    unread: false,
-    answered: true,
-  },
-  {
-    id: "4",
-    title: "Study group for final exam",
-    category: "general",
-    unread: false,
-    answered: false,
-  },
-  {
-    id: "5",
-    title: "Lecture slides posted?",
-    category: "logistics",
-    unread: false,
-    answered: true,
-  },
-];
 
 const CATEGORY_COLORS: Record<string, string> = {
   logistics: "primary",
@@ -69,19 +35,40 @@ export default function PazzaLayout({ children }: { children: ReactNode }) {
     (state: RootState) => state.accountReducer,
   );
 
-  if (currentUser === null)
+  const [posts, setPosts] = useState([]);
+
+  const nameInfo: userInfo = { firstName: "", lastName: "", _id: "" };
+  if (
+    currentUser !== null &&
+    "firstName" in currentUser &&
+    "lastName" in currentUser &&
+    "_id" in currentUser
+  ) {
+    const user = currentUser as {
+      firstName: string;
+      lastName: string;
+      _id: string;
+    };
+    nameInfo.firstName = user.firstName;
+    nameInfo.lastName = user.lastName;
+    nameInfo._id = user._id;
+  }
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      if (nameInfo === null || cid === undefined) return [];
+      const posts = await client.getAllPazzaPosts(cid as string, nameInfo._id);
+      setPosts(posts);
+    };
+    fetchPosts();
+  }, [currentUser, cid, nameInfo]);
+
+  if (currentUser === null || cid === undefined)
     return (
       <div>
         <p>Please log in.</p>
       </div>
     );
-
-  const nameInfo: userInfo = { firstName: "", lastName: "" };
-  if ("firstName" in currentUser && "lastName" in currentUser) {
-    const user = currentUser as { firstName: string; lastName: string };
-    nameInfo.firstName = user.firstName;
-    nameInfo.lastName = user.lastName;
-  }
 
   return (
     <div className="d-flex flex-column flex-grow-1" style={{ minHeight: 0 }}>
@@ -167,7 +154,7 @@ export default function PazzaLayout({ children }: { children: ReactNode }) {
           style={{ width: 280, flexShrink: 0 }}
         >
           <div className="list-group list-group-flush">
-            {MOCK_POSTS.map((post) => {
+            {posts.map((post) => {
               const href = `/courses/${cid}/pazza/${post.id}`;
               const active = pathname === href;
               return (
@@ -191,14 +178,14 @@ export default function PazzaLayout({ children }: { children: ReactNode }) {
                       <div
                         className={`text-truncate ${post.unread && !active ? "fw-semibold" : ""}`}
                       >
-                        {post.title}
+                        {post.summary}
                       </div>
                       <div className="d-flex align-items-center gap-1 mt-1">
                         <span
-                          className={`badge text-bg-${CATEGORY_COLORS[post.category] ?? "secondary"}`}
+                          className={`badge text-bg-${CATEGORY_COLORS[post.type] ?? "secondary"}`}
                           style={{ fontSize: 10 }}
                         >
-                          {post.category}
+                          {post.type}
                         </span>
                         {post.answered && (
                           <span
