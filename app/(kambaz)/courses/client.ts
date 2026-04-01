@@ -119,9 +119,13 @@ export const getPostById = async (
   userId: string,
   postId: string,
 ) => {
-  console.log(USERS_API + `/${userId}/courses/${courseId}/pazza/${postId}`);
   const { data } = await axios.get(
     USERS_API + `/${userId}/courses/${courseId}/pazza/${postId}`,
   );
+  return data;
+};
+
+export const getUserById = async (userId: string) => {
+  const { data } = await axios.get(USERS_API + `/${userId}`);
   return data;
 };

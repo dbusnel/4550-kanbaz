@@ -45,7 +45,9 @@ export default function PazzaPost() {
         nameInfo._id,
         pid as string,
       );
-      setDisplayPost(post);
+
+      const authorInfo = await client.getUserById(post.authorId);
+      setDisplayPost({ authorInfo: authorInfo, ...post });
     };
     fetchPost();
   }, [cid, nameInfo._id, pid]);
@@ -54,10 +56,43 @@ export default function PazzaPost() {
     return <h1>Loading...</h1>;
   }
 
+  const author = `${nameInfo.firstName} ${nameInfo.lastName}`;
+  const viewCount = displayPost.viewCount ?? 0;
+  const createdAt = displayPost.createdAt
+    ? new Date(displayPost.createdAt).toLocaleString()
+    : "N/A";
+  const updatedAt = displayPost.updatedAt
+    ? new Date(displayPost.updatedAt).toLocaleString()
+    : "N/A";
+
   return (
     <div>
-      <h1>{displayPost.summary}</h1>
-      <p>{displayPost.details}</p>
+      <h1 style={{ fontWeight: "bold" }}>{displayPost.summary}</h1>
+      <div
+        style={{ color: "#555", fontSize: "0.875rem", marginBottom: "0.25rem" }}
+      >
+        <span>
+          By{" "}
+          {`${displayPost.authorInfo.firstName} ${displayPost.authorInfo.lastName}`}
+        </span>
+        <span style={{ margin: "0 0.5rem" }}>·</span>
+        <span>Posted: {createdAt}</span>
+        <span style={{ margin: "0 0.5rem" }}>·</span>
+        <span>Last updated: {updatedAt}</span>
+      </div>
+      <br />
+      <p style={{ fontSize: "1.125rem" }}>{displayPost.details}</p>
+      <div
+        style={{
+          fontSize: "1.25rem",
+          fontWeight: "bold",
+          marginBottom: "0.5rem",
+          textAlign: "right",
+        }}
+      >
+        {viewCount} view{viewCount !== 1 ? "s" : ""}
+      </div>
+      <hr />
     </div>
   );
 }
