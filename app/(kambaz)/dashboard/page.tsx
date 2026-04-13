@@ -79,7 +79,7 @@ export default function Dashboard() {
       setAllCourses(all);
       if (!currentUser) return;
       try {
-        const enrolled = await client.findMyCourses();
+        const enrolled = await client.getEnrolledCoursesForUser(currentUser._id);
         setEnrolledCourses(enrolled);
       } catch {
         setEnrolledCourses([]);
