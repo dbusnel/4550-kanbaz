@@ -129,3 +129,46 @@ export const getUserById = async (userId: string) => {
   const { data } = await axios.get(USERS_API + `/${userId}`);
   return data;
 };
+
+export const setDiscussionResolved = async (
+  courseId: string,
+  userId: string,
+  postId: string,
+  discussionId: string,
+  resolved: boolean,
+) => {
+  const { data } = await axios.patch(
+    USERS_API +
+      `/${userId}/courses/${courseId}/pazza/${postId}/discussions/${discussionId}`,
+    { resolved },
+  );
+  return data;
+};
+
+export const addFollowUpDiscussion = async (
+  courseId: string,
+  userId: string,
+  postId: string,
+  content: string,
+) => {
+  const { data } = await axios.post(
+    USERS_API + `/${userId}/courses/${courseId}/pazza/${postId}/discussions`,
+    { content },
+  );
+  return data;
+};
+
+export const addReplyToDiscussion = async (
+  courseId: string,
+  userId: string,
+  postId: string,
+  discussionId: string,
+  content: string,
+) => {
+  const { data } = await axios.post(
+    USERS_API +
+      `/${userId}/courses/${courseId}/pazza/${postId}/discussions/${discussionId}/replies`,
+    { content },
+  );
+  return data;
+};
