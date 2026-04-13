@@ -14,19 +14,8 @@ import { FaPlus } from "react-icons/fa";
 import { IoIosSearch } from "react-icons/io";
 import { LuNotepadText } from "react-icons/lu";
 import { BsGripVertical } from "react-icons/bs";
-import { assignments } from "@/app/(kambaz)/database";
 import { useParams, useRouter } from "next/navigation";
-import { useDispatch, useSelector } from "react-redux";
-import {
-  addAssignment,
-  editAssignment,
-  updateAssignment,
-  deleteAssignment,
-  setAssignments,
-} from "./reducer";
-import { v4 as uuidv4 } from "uuid";
-import { useEffect } from "react";
-import { RootState } from "../../../store";
+import { useState, useEffect } from "react";
 import { FaTrashAlt } from "react-icons/fa";
 import * as client from "../../client";
 
@@ -38,19 +27,11 @@ function isAssignmentAvailable(assignment: any) {
 
 export default function Assignments() {
   const { cid } = useParams();
-
-  const { assignments } = useSelector(
-    (state: RootState) => state.assignmentReducer,
-  );
-  const dispatch = useDispatch();
   const router = useRouter();
+  const [assignments, setAssignments] = useState<any[]>([]);
 
   useEffect(() => {
-    const fetchAssignments = async () => {
-      const data = await client.findAssignmentsForCourse(cid as string);
-      dispatch(setAssignments(data));
-    };
-    fetchAssignments();
+    client.findAssignmentsForCourse(cid as string).then(setAssignments);
   }, [cid]);
 
   return (
@@ -87,7 +68,7 @@ export default function Assignments() {
               { name: "New Assignment", course: cid },
             );
 
-            dispatch(setAssignments([...assignments, newAssignment]));
+            setAssignments([...assignments, newAssignment]);
             router.push(`/courses/${cid}/assignments/${newAssignment._id}`);
           }}
           className="me-1 float-end d-flex flex-row items-center"
@@ -152,13 +133,7 @@ export default function Assignments() {
                     <FaTrashAlt
                       onClick={async () => {
                         await client.deleteAssignment(assignment._id);
-                        dispatch(
-                          setAssignments(
-                            assignments.filter(
-                              (a: any) => a._id !== assignment._id,
-                            ),
-                          ),
-                        );
+                        setAssignments(assignments.filter((a: any) => a._id !== assignment._id));
                       }}
                     />
                   </ListGroupItem>

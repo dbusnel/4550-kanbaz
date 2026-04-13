@@ -3,10 +3,31 @@
 import { Table } from "react-bootstrap";
 import { FaUserCircle } from "react-icons/fa";
 import PeopleDetails from "../Details";
-import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
+import * as client from "../../../client";
 
-export default function PeopleTable({
+export default function PeoplePage() {
+  const { cid } = useParams();
+  const [users, setUsers] = useState<any[]>([]);
+
+  const fetchUsers = async () => {
+    const data = await client.findUsersForCourse(cid as string);
+    setUsers(data);
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, [cid]);
+
+  return (
+    <div>
+      <PeopleTable users={users} fetchUsers={fetchUsers} />
+    </div>
+  );
+}
+
+export function PeopleTable({
   users = [],
   fetchUsers,
 }: {

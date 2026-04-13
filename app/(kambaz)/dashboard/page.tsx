@@ -75,12 +75,15 @@ export default function Dashboard() {
 
   useEffect(() => {
     const fetchCourses = async () => {
-      const [all, enrolled] = await Promise.all([
-        client.fetchAllCourses(),
-        client.findMyCourses(),
-      ]);
+      const all = await client.fetchAllCourses();
       setAllCourses(all);
-      setEnrolledCourses(enrolled);
+      if (!currentUser) return;
+      try {
+        const enrolled = await client.findMyCourses();
+        setEnrolledCourses(enrolled);
+      } catch {
+        setEnrolledCourses([]);
+      }
     };
     fetchCourses();
   }, [currentUser]);
@@ -207,7 +210,7 @@ export default function Dashboard() {
                             (c: any) => c._id === course._id,
                           );
                           if (doDrop) {
-                            client.unenrollUserInCourse(
+                            client.unenrollFromCourse(
                               currentUser._id,
                               course._id,
                             );
@@ -217,7 +220,7 @@ export default function Dashboard() {
                               ),
                             );
                           } else {
-                            client.enrollUserInCourse(
+                            client.enrollIntoCourse(
                               currentUser._id,
                               course._id,
                             );

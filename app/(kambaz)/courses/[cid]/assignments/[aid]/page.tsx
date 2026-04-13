@@ -12,35 +12,31 @@ import {
   Button,
 } from "react-bootstrap";
 
-import {
-  addAssignment,
-  editAssignment,
-  updateAssignment,
-  deleteAssignment,
-  setAssignments,
-} from "../reducer";
-
+import { setAssignments } from "../reducer";
 import * as client from "../../../client";
 
 import { MdOutlineEditCalendar } from "react-icons/md";
 import InputGroupText from "react-bootstrap/esm/InputGroupText";
-import { useParams } from "next/navigation";
-import { assignments } from "@/app/(kambaz)/database";
+import { useParams, useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../../../store";
-import { redirect } from "next/navigation";
+import { useState, useEffect } from "react";
 
 export default function AssignmentEditor() {
   const { cid, aid } = useParams();
-
+  const router = useRouter();
+  const dispatch = useDispatch();
   const { assignments } = useSelector(
     (state: RootState) => state.assignmentReducer,
   );
-  const dispatch = useDispatch();
 
-  const assignment = assignments.find(
-    (a: any) => a._id === aid && a.course === cid,
-  );
+  const [assignment, setAssignment] = useState<any>(null);
+
+  useEffect(() => {
+    client.findAssignmentById(aid as string).then(setAssignment);
+  }, [aid]);
+
+  if (!assignment) return null;
 
   return (
     <div id="assignment-editor" className="w-50">
@@ -216,7 +212,6 @@ export default function AssignmentEditor() {
           size="lg"
           className="me-1 float-end d-flex flex-row items-center"
           id="wd-add-assignment-btn"
-          href={`/courses/${cid}/assignments/`}
           onClick={async () => {
             const newAssignment = {
               name: (
@@ -246,11 +241,10 @@ export default function AssignmentEditor() {
               _id: aid,
             };
             await client.updateAssignment(newAssignment);
-            const newAssignments = assignments.map((a: any) =>
-              a._id === newAssignment._id ? newAssignment : a,
-            );
-            dispatch(setAssignments(newAssignments));
-            redirect(`/courses/${cid}/assignments/`);
+            dispatch(setAssignments(assignments.map((a: any) =>
+              a._id === newAssignment._id ? { ...a, ...newAssignment } : a,
+            )));
+            router.push(`/courses/${cid}/assignments/`);
           }}
         >
           Save
