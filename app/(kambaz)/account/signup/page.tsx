@@ -17,12 +17,12 @@ export default function Signup() {
     router.push("/profile");
   };
   return (
-    <div className="wd-signup-screen">
+    <div className="wd-signup-screen" style={{ margin: "0 auto" }}>
       <h1>Sign up</h1>
       <FormControl
         value={user.username}
         onChange={(e) => setUser({ ...user, username: e.target.value })}
-        className="wd-username b-2"
+        className="wd-username mb-2"
         placeholder="username"
       />
       <FormControl
