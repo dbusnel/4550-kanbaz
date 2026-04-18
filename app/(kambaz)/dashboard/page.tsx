@@ -75,12 +75,12 @@ export default function Dashboard() {
 
   useEffect(() => {
     const fetchCourses = async () => {
-      const [all, enrolled] = await Promise.all([
+      const [allResult, enrolledResult] = await Promise.allSettled([
         client.fetchAllCourses(),
         client.findMyCourses(),
       ]);
-      setAllCourses(all);
-      setEnrolledCourses(enrolled);
+      if (allResult.status === "fulfilled") setAllCourses(allResult.value);
+      if (enrolledResult.status === "fulfilled") setEnrolledCourses(enrolledResult.value);
     };
     fetchCourses();
   }, [currentUser]);
