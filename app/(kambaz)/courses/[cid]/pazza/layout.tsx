@@ -250,23 +250,23 @@ export default function PazzaLayout({ children }: { children: ReactNode }) {
           <span style={{ color: "rgba(255,255,255,0.8)", fontSize: 13 }}>{cid}</span>
         </div>
         <NavItem>
-          <NavLink
+          <Link
             href={`/courses/${cid}/pazza`}
             className="nav-link"
             style={{ color: "#fff", fontWeight: pathname.endsWith("pazza") && !pathname.endsWith("manage") ? 700 : 400 }}
           >
             Q &amp; A
-          </NavLink>
+          </Link>
         </NavItem>
         {isInstructor && (
           <NavItem>
-            <NavLink
+            <Link
               href={`/courses/${cid}/pazza/manage`}
               className="nav-link"
               style={{ color: "#fff", fontWeight: pathname.endsWith("manage") ? 700 : 400 }}
             >
               Manage class
-            </NavLink>
+            </Link>
           </NavItem>
         )}
         <div className="ms-auto d-flex align-items-center gap-2">
@@ -312,13 +312,13 @@ export default function PazzaLayout({ children }: { children: ReactNode }) {
             );
           })}
           {isInstructor && (
-            <a
+            <Link
               href={`/courses/${cid}/pazza/manage`}
               className="ms-auto text-decoration-none"
               style={{ fontSize: 12, color: "#6c757d", whiteSpace: "nowrap" }}
             >
               Manage and reorder folders
-            </a>
+            </Link>
           )}
         </div>
       )}
