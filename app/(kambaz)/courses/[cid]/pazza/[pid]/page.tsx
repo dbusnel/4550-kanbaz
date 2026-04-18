@@ -3,36 +3,92 @@ import { useParams } from "next/navigation";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../../store";
 import * as client from "../../../client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { TbSquareLetterSFilled, TbSquareLetterIFilled } from "react-icons/tb";
-import { FormControl, FormSelect } from "react-bootstrap";
+import { Dropdown } from "react-bootstrap";
 
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
 import { FaUserCircle } from "react-icons/fa";
 import DOMPurify from "dompurify";
 
-interface userInfo {
+interface UserInfo {
   firstName: string;
   lastName: string;
   _id: string;
 }
 
+interface PazzaAnswer {
+  id: string;
+  authorId: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface PazzaDiscussion {
+  id: string;
+  authorId: string;
+  content: string;
+  resolved: boolean;
+  createdAt: string;
+  updatedAt: string;
+  replies: { id: string; authorId: string; content: string; createdAt: string; updatedAt: string }[];
+}
+
+interface PazzaPost {
+  id: string;
+  courseId: string;
+  type: "question" | "note";
+  summary: string;
+  details: string;
+  authorId: string;
+  authorInfo: { firstName: string; lastName: string };
+  answered: boolean;
+  viewCount: number;
+  createdAt: string;
+  updatedAt: string;
+  folderIds: string[];
+  studentAnswers: PazzaAnswer[];
+  instructorAnswers: PazzaAnswer[];
+  followUpDiscussions: PazzaDiscussion[];
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  logistics: "primary",
+  homework: "warning",
+  announcements: "danger",
+  general: "secondary",
+};
+
 export default function PazzaPost() {
   const { cid, pid } = useParams();
+  const router = useRouter();
 
   const { currentUser } = useSelector(
     (state: RootState) => state.accountReducer,
   );
 
   const [value, setValue] = useState("");
-
-  const [displayPost, setDisplayPost] = useState();
+  const [displayPost, setDisplayPost] = useState<PazzaPost | undefined>(undefined);
   const [userCache, setUserCache] = useState<Record<string, { firstName: string; lastName: string }>>({});
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
+  const [editingAnswer, setEditingAnswer] = useState<"student" | "instructor" | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const [newStudentContent, setNewStudentContent] = useState("");
+  const [newInstructorContent, setNewInstructorContent] = useState("");
+  const [editingDiscussionId, setEditingDiscussionId] = useState<string | null>(null);
+  const [editDiscussionContent, setEditDiscussionContent] = useState("");
+  const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
+  const [editReplyContent, setEditReplyContent] = useState("");
+  const [folders, setFolders] = useState<{ id: string; name: string }[]>([]);
+  const [editingPost, setEditingPost] = useState(false);
+  const [editSummary, setEditSummary] = useState("");
+  const [editDetails, setEditDetails] = useState("");
 
-  const nameInfo: userInfo = { firstName: "", lastName: "", _id: "" };
+  const nameInfo: UserInfo = { firstName: "", lastName: "", _id: "" };
   if (
     currentUser !== null &&
     "firstName" in currentUser &&
@@ -50,6 +106,7 @@ export default function PazzaPost() {
   }
 
   useEffect(() => {
+    let cancelled = false;
     const fetchPost = async () => {
       if (pid === undefined || cid === undefined) return undefined;
       const post = await client.getPostById(
@@ -60,7 +117,6 @@ export default function PazzaPost() {
 
       const authorInfo = await client.getUserById(post.authorId);
 
-      // Collect all unique author IDs from discussions and their replies
       const authorIds = new Set<string>();
       for (const disc of post.followUpDiscussions ?? []) {
         if (disc.authorId) authorIds.add(disc.authorId);
@@ -74,12 +130,22 @@ export default function PazzaPost() {
           return [id, user] as [string, { firstName: string; lastName: string }];
         }),
       );
-      setUserCache(Object.fromEntries(userEntries));
 
+      if (cancelled) return;
+      setUserCache(Object.fromEntries(userEntries));
       setDisplayPost({ authorInfo: authorInfo, ...post });
+
+      const { viewCount } = await client.incrementPazzaViewCount(cid as string, nameInfo._id, pid as string);
+      if (!cancelled) setDisplayPost((prev) => prev ? { ...prev, viewCount } : prev);
     };
     fetchPost();
+    return () => { cancelled = true; };
   }, [cid, nameInfo._id, pid]);
+
+  useEffect(() => {
+    if (!cid) return;
+    client.getPazzaFolders(cid as string).then(setFolders);
+  }, [cid]);
 
   if (displayPost === undefined) {
     return <h1>Loading...</h1>;
@@ -110,8 +176,8 @@ export default function PazzaPost() {
       resolved,
     );
     setDisplayPost((prev) => ({
-      ...prev,
-      followUpDiscussions: prev.followUpDiscussions.map((d) =>
+      ...prev!,
+      followUpDiscussions: prev!.followUpDiscussions.map((d) =>
         d.id === discussionId ? { ...d, resolved } : d,
       ),
     }));
@@ -127,8 +193,8 @@ export default function PazzaPost() {
       value,
     );
     setDisplayPost((prev) => ({
-      ...prev,
-      followUpDiscussions: [...prev.followUpDiscussions, discussion],
+      ...prev!,
+      followUpDiscussions: [...prev!.followUpDiscussions, discussion],
     }));
     setUserCache((prev) => ({
       ...prev,
@@ -148,8 +214,8 @@ export default function PazzaPost() {
     );
     // Optimistically add the reply and cache the current user as its author
     setDisplayPost((prev) => ({
-      ...prev,
-      followUpDiscussions: prev.followUpDiscussions.map((d) =>
+      ...prev!,
+      followUpDiscussions: prev!.followUpDiscussions.map((d) =>
         d.id === discussionId
           ? { ...d, replies: [...d.replies, reply] }
           : d,
@@ -163,160 +229,296 @@ export default function PazzaPost() {
     setReplyingTo(null);
   };
 
-  const studentAnswer = displayPost.studentAnswers[0]
-    ? displayPost.studentAnswers[0]
-    : undefined;
-  const instructorAnswer = displayPost.instructorAnswers[0]
-    ? displayPost.instructorAnswers[0]
-    : undefined;
+  const INSTRUCTOR_ROLES = ["FACULTY", "INSTRUCTOR", "TA"];
+  const isInstructor = INSTRUCTOR_ROLES.includes((currentUser as any)?.role?.toUpperCase());
+
+  const studentAnswer = displayPost.studentAnswers[0] ?? undefined;
+  const instructorAnswer = displayPost.instructorAnswers[0] ?? undefined;
+
+  const canActOnStudentAnswer = (answer: any) =>
+    isInstructor || answer?.authorId === nameInfo._id;
+
+  const handleStartEdit = (type: "student" | "instructor", content: string) => {
+    setEditingAnswer(type);
+    setEditContent(content);
+  };
+
+  const handleSaveAnswer = async (type: "student" | "instructor") => {
+    if (!editContent.trim() || editContent === "<p><br></p>") return;
+    if (type === "student") {
+      const updated = await client.updateStudentAnswer(cid as string, nameInfo._id, pid as string, studentAnswer.id, editContent);
+      setDisplayPost((prev) => ({ ...prev!, studentAnswers: prev!.studentAnswers.map((a) => a.id === studentAnswer.id ? updated : a) }));
+    } else {
+      const updated = await client.updateInstructorAnswer(cid as string, nameInfo._id, pid as string, instructorAnswer.id, editContent);
+      setDisplayPost((prev) => ({ ...prev!, instructorAnswers: prev!.instructorAnswers.map((a) => a.id === instructorAnswer.id ? updated : a) }));
+    }
+    setEditingAnswer(null);
+  };
+
+  const handleDeleteAnswer = async (type: "student" | "instructor", answerId: string) => {
+    if (type === "student") {
+      await client.deleteStudentAnswer(cid as string, nameInfo._id, pid as string, answerId);
+      setDisplayPost((prev) => ({
+        ...prev!,
+        studentAnswers: prev!.studentAnswers.filter((a) => a.id !== answerId),
+        answered: prev!.instructorAnswers.length > 0,
+      }));
+    } else {
+      await client.deleteInstructorAnswer(cid as string, nameInfo._id, pid as string, answerId);
+      setDisplayPost((prev) => ({
+        ...prev!,
+        instructorAnswers: prev!.instructorAnswers.filter((a) => a.id !== answerId),
+        answered: prev!.studentAnswers.length > 0,
+      }));
+    }
+  };
+
+  const handlePostStudentAnswer = async () => {
+    if (!newStudentContent.trim() || newStudentContent === "<p><br></p>") return;
+    const answer = await client.createStudentAnswer(cid as string, nameInfo._id, pid as string, newStudentContent);
+    setDisplayPost((prev) => ({ ...prev!, studentAnswers: [...prev!.studentAnswers, answer], answered: true }));
+    setNewStudentContent("");
+  };
+
+  const handleSaveDiscussion = async (discussionId: string) => {
+    if (!editDiscussionContent.trim() || editDiscussionContent === "<p><br></p>") return;
+    const updated = await client.updateFollowUpDiscussion(cid as string, nameInfo._id, pid as string, discussionId, editDiscussionContent);
+    setDisplayPost((prev) => ({
+      ...prev!,
+      followUpDiscussions: prev!.followUpDiscussions.map((d) => d.id === discussionId ? { ...d, ...updated } : d),
+    }));
+    setEditingDiscussionId(null);
+  };
+
+  const handleDeleteDiscussion = async (discussionId: string) => {
+    await client.deleteFollowUpDiscussion(cid as string, nameInfo._id, pid as string, discussionId);
+    setDisplayPost((prev) => ({
+      ...prev!,
+      followUpDiscussions: prev!.followUpDiscussions.filter((d) => d.id !== discussionId),
+    }));
+  };
+
+  const handleSaveReply = async (discussionId: string, replyId: string) => {
+    if (!editReplyContent.trim()) return;
+    const updated = await client.updateReply(cid as string, nameInfo._id, pid as string, discussionId, replyId, editReplyContent);
+    setDisplayPost((prev) => ({
+      ...prev!,
+      followUpDiscussions: prev!.followUpDiscussions.map((d) =>
+        d.id === discussionId
+          ? { ...d, replies: d.replies.map((r) => r.id === replyId ? { ...r, ...updated } : r) }
+          : d,
+      ),
+    }));
+    setEditingReplyId(null);
+  };
+
+  const handleDeleteReply = async (discussionId: string, replyId: string) => {
+    await client.deleteReply(cid as string, nameInfo._id, pid as string, discussionId, replyId);
+    setDisplayPost((prev) => ({
+      ...prev!,
+      followUpDiscussions: prev!.followUpDiscussions.map((d) =>
+        d.id === discussionId
+          ? { ...d, replies: d.replies.filter((r) => r.id !== replyId) }
+          : d,
+      ),
+    }));
+  };
+
+  const handleSavePost = async () => {
+    if (!editSummary.trim()) return;
+    const updated = await client.updatePazzaPost(cid as string, nameInfo._id, pid as string, { summary: editSummary, details: editDetails });
+    setDisplayPost((prev) => ({ ...prev!, ...updated }));
+    setEditingPost(false);
+  };
+
+  const handleDeletePost = async () => {
+    await client.deletePazzaPostById(cid as string, nameInfo._id, pid as string);
+    router.push(`/courses/${cid}/pazza`);
+  };
+
+  const handlePostInstructorAnswer = async () => {
+    if (!newInstructorContent.trim() || newInstructorContent === "<p><br></p>") return;
+    const answer = await client.createInstructorAnswer(cid as string, nameInfo._id, pid as string, newInstructorContent);
+    setDisplayPost((prev) => ({ ...prev!, instructorAnswers: [...prev!.instructorAnswers, answer], answered: true }));
+    setNewInstructorContent("");
+  };
+
+  const postFolders = folders.filter((f) => displayPost.folderIds?.includes(f.id));
 
   return (
     <div>
-      <h1 style={{ fontWeight: "bold" }}>{displayPost.summary}</h1>
-      <div
-        style={{ color: "#555", fontSize: "0.875rem", marginBottom: "0.25rem" }}
-      >
-        <span>
-          By{" "}
-          {`${displayPost.authorInfo.firstName} ${displayPost.authorInfo.lastName}`}
-        </span>
+      <div className="d-flex align-items-start justify-content-between gap-2 mb-1">
+        <h1 style={{ fontWeight: "bold", marginBottom: 0 }}>{displayPost.summary}</h1>
+        {(isInstructor || displayPost.authorId === nameInfo._id) && !editingPost && (
+          <Dropdown>
+            <Dropdown.Toggle variant="outline-secondary" size="sm" style={{ whiteSpace: "nowrap" }}>Actions</Dropdown.Toggle>
+            <Dropdown.Menu>
+              <Dropdown.Item onClick={() => { setEditingPost(true); setEditSummary(displayPost.summary); setEditDetails(displayPost.details); }}>Edit</Dropdown.Item>
+              <Dropdown.Item className="text-danger" onClick={handleDeletePost}>Delete</Dropdown.Item>
+            </Dropdown.Menu>
+          </Dropdown>
+        )}
+      </div>
+
+      <div style={{ color: "#555", fontSize: "0.875rem", marginBottom: "0.25rem" }}>
+        <span>By {`${displayPost.authorInfo.firstName} ${displayPost.authorInfo.lastName}`}</span>
         <span style={{ margin: "0 0.5rem" }}>·</span>
         <span>Posted: {createdAt}</span>
         <span style={{ margin: "0 0.5rem" }}>·</span>
         <span>Last updated: {updatedAt}</span>
       </div>
-      <br />
-      <div
-        style={{ fontSize: "1.125rem" }}
-        dangerouslySetInnerHTML={{ __html: sanitize(displayPost.details ?? "") }}
-      />
-      <div
-        style={{
-          fontSize: "1.25rem",
-          fontWeight: "bold",
-          marginBottom: "0.5rem",
-          textAlign: "right",
-        }}
-      >
+
+      {postFolders.length > 0 && (
+        <div className="d-flex flex-wrap gap-1 mb-2">
+          {postFolders.map((f) => (
+            <span
+              key={f.id}
+              className={`badge text-bg-${CATEGORY_COLORS[f.name.toLowerCase()] ?? "secondary"}`}
+            >
+              {f.name}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {editingPost ? (
+        <div className="mt-3">
+          <input
+            type="text"
+            className="form-control mb-2"
+            value={editSummary}
+            onChange={(e) => setEditSummary(e.target.value)}
+            placeholder="Summary"
+          />
+          <ReactQuill theme="snow" value={editDetails} onChange={setEditDetails} />
+          <div className="d-flex gap-2 mt-2">
+            <button className="btn btn-primary btn-sm" onClick={handleSavePost}>Save</button>
+            <button className="btn btn-outline-secondary btn-sm" onClick={() => setEditingPost(false)}>Cancel</button>
+          </div>
+        </div>
+      ) : (
+        <div
+          style={{ fontSize: "1.125rem" }}
+          dangerouslySetInnerHTML={{ __html: sanitize(displayPost.details ?? "") }}
+        />
+      )}
+
+      <div style={{ fontSize: "1.25rem", fontWeight: "bold", marginBottom: "0.5rem", textAlign: "right" }}>
         {viewCount} view{viewCount !== 1 ? "s" : ""}
       </div>
       <hr />
       {displayPost.type === "question" && (
         <div>
-          <span className="flex flex-row">
-            <TbSquareLetterSFilled
-              className="w-10"
-              style={{ fontSize: "32px" }}
-            />
-            <h3>Student answer</h3>
-          </span>
-          {studentAnswer !== undefined ? (
-            <div>
-              <p>
-                Last updated at{" "}
-                {new Date(studentAnswer.updatedAt).toLocaleString()}
-              </p>
-              <p>{studentAnswer.content}</p>
-            </div>
-          ) : (
-            <p>Enter text here</p>
-          )}
-          <div className="w-25">
-            <FormSelect className="w-4">
-              <option value="actions" defaultChecked>
-                Actions
-              </option>
-              <option value="edit"> Edit </option>
-              <option value="delete"> Delete </option>
-            </FormSelect>
+          {/* Student answer */}
+          <div className="d-flex align-items-center justify-content-between mb-2">
+            <span className="d-flex align-items-center gap-2">
+              <TbSquareLetterSFilled style={{ fontSize: "32px" }} />
+              <h3 className="mb-0">Student answer</h3>
+            </span>
+            {studentAnswer && canActOnStudentAnswer(studentAnswer) && editingAnswer !== "student" && (
+              <Dropdown>
+                <Dropdown.Toggle variant="outline-secondary" size="sm">Actions</Dropdown.Toggle>
+                <Dropdown.Menu>
+                  <Dropdown.Item onClick={() => handleStartEdit("student", studentAnswer.content)}>Edit</Dropdown.Item>
+                  <Dropdown.Item className="text-danger" onClick={() => handleDeleteAnswer("student", studentAnswer.id)}>Delete</Dropdown.Item>
+                </Dropdown.Menu>
+              </Dropdown>
+            )}
           </div>
+
+          {studentAnswer ? (
+            editingAnswer === "student" ? (
+              <div>
+                <ReactQuill theme="snow" value={editContent} onChange={setEditContent} />
+                <div className="d-flex gap-2 mt-2">
+                  <button className="btn btn-primary btn-sm" onClick={() => handleSaveAnswer("student")}>Save</button>
+                  <button className="btn btn-outline-secondary btn-sm" onClick={() => setEditingAnswer(null)}>Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <p style={{ fontSize: "0.85rem", color: "#888" }}>
+                  Last updated at {new Date(studentAnswer.updatedAt).toLocaleString()}
+                </p>
+                <div dangerouslySetInnerHTML={{ __html: sanitize(studentAnswer.content) }} />
+              </div>
+            )
+          ) : isInstructor ? (
+            <p className="text-muted fst-italic">No student answer yet.</p>
+          ) : (
+            <div>
+              <ReactQuill theme="snow" value={newStudentContent} onChange={setNewStudentContent} />
+              <button className="btn btn-primary btn-sm mt-2" onClick={handlePostStudentAnswer}>Post Answer</button>
+            </div>
+          )}
+
           <hr />
-          <span className="flex flex-row">
-            <TbSquareLetterIFilled
-              className="w-10"
-              style={{ fontSize: "32px" }}
-            />
-            <h3>Instructor answer</h3>
-          </span>
+
+          {/* Instructor answer */}
+          <div className="d-flex align-items-center justify-content-between mb-2">
+            <span className="d-flex align-items-center gap-2">
+              <TbSquareLetterIFilled style={{ fontSize: "32px" }} />
+              <h3 className="mb-0">Instructor answer</h3>
+            </span>
+            {instructorAnswer && isInstructor && editingAnswer !== "instructor" && (
+              <Dropdown>
+                <Dropdown.Toggle variant="outline-secondary" size="sm">Actions</Dropdown.Toggle>
+                <Dropdown.Menu>
+                  <Dropdown.Item onClick={() => handleStartEdit("instructor", instructorAnswer.content)}>Edit</Dropdown.Item>
+                  <Dropdown.Item className="text-danger" onClick={() => handleDeleteAnswer("instructor", instructorAnswer.id)}>Delete</Dropdown.Item>
+                </Dropdown.Menu>
+              </Dropdown>
+            )}
+          </div>
+
           {instructorAnswer ? (
+            editingAnswer === "instructor" ? (
+              <div>
+                <ReactQuill theme="snow" value={editContent} onChange={setEditContent} />
+                <div className="d-flex gap-2 mt-2">
+                  <button className="btn btn-primary btn-sm" onClick={() => handleSaveAnswer("instructor")}>Save</button>
+                  <button className="btn btn-outline-secondary btn-sm" onClick={() => setEditingAnswer(null)}>Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <p style={{ fontSize: "0.85rem", color: "#888" }}>
+                  Last updated at {new Date(instructorAnswer.updatedAt).toLocaleString()}
+                </p>
+                <div dangerouslySetInnerHTML={{ __html: sanitize(instructorAnswer.content) }} />
+              </div>
+            )
+          ) : isInstructor ? (
             <div>
-              <p>
-                Last updated at{" "}
-                {new Date(instructorAnswer.updatedAt).toLocaleString()}
-              </p>
-              <p>{instructorAnswer.content}</p>
+              <ReactQuill theme="snow" value={newInstructorContent} onChange={setNewInstructorContent} />
+              <button className="btn btn-primary btn-sm mt-2" onClick={handlePostInstructorAnswer}>Post Answer</button>
             </div>
           ) : (
-            <p>Enter text here</p>
+            <p className="text-muted fst-italic">No instructor answer yet.</p>
           )}
-          <div className="w-25">
-            <FormSelect className="w-4">
-              <option value="actions" defaultChecked>
-                Actions
-              </option>
-              <option value="edit"> Edit </option>
-              <option value="delete"> Delete </option>
-            </FormSelect>
-          </div>
+
           <hr />
         </div>
       )}
-      <div style={{ marginTop: "1.5rem" }}>
-        <h3
-          style={{
-            fontWeight: "600",
-            fontSize: "1.1rem",
-            marginBottom: "1rem",
-            paddingBottom: "0.5rem",
-            borderBottom: "1px solid #e5e7eb",
-            color: "#374151",
-          }}
-        >
+      <div className="mt-4">
+        <h3 style={{ fontSize: "1.1rem", fontWeight: 600, marginBottom: "1rem" }}>
           Follow-up Discussions
         </h3>
+        <hr className="mt-0" />
 
         {displayPost.followUpDiscussions.length === 0 && (
-          <p style={{ color: "#9ca3af", fontStyle: "italic", fontSize: "0.9rem" }}>
-            No follow-up discussions yet. Be the first to ask!
+          <p className="text-muted fst-italic" style={{ fontSize: "0.9rem" }}>
+            No follow-up discussions yet.
           </p>
         )}
 
         {displayPost.followUpDiscussions.map((discussion) => (
-          <div
-            key={discussion.id}
-            style={{
-              marginBottom: "1rem",
-              borderRadius: "8px",
-              border: "1px solid #e5e7eb",
-              overflow: "hidden",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-            }}
-          >
+          <div key={discussion.id} className="border rounded mb-3">
             {/* Discussion body */}
-            <div
-              style={{
-                padding: "0.875rem 1rem",
-                backgroundColor: "#f9fafb",
-                borderLeft: "4px solid #6366f1",
-              }}
-            >
-              {/* Resolved toggle — only shown to the discussion author */}
+            <div className="px-3 pt-3 pb-2 bg-light">
               {nameInfo._id === discussion.authorId && (
-                <div
-                  className="flex flex-row"
-                  style={{
-                    gap: "1rem",
-                    marginBottom: "0.5rem",
-                    fontSize: "0.78rem",
-                    color: "#6b7280",
-                    display: "inline-flex",
-                    padding: "0.25rem 0.6rem",
-                    borderRadius: "5px",
-                    backgroundColor: discussion.resolved ? "#f0fdf4" : "#fffbeb",
-                    border: discussion.resolved ? "1px solid #bbf7d0" : "1px solid #fde68a",
-                  }}
-                >
-                  <label style={{ display: "flex", alignItems: "center", gap: "0.3rem", cursor: "pointer" }}>
+                <div className="d-inline-flex gap-3 mb-2 px-2 py-1 rounded" style={{ fontSize: "0.78rem", color: "#555", backgroundColor: discussion.resolved ? "#d1fae5" : "#fef9c3" }}>
+                  <label className="d-flex align-items-center gap-1" style={{ cursor: "pointer" }}>
                     <input
                       type="radio"
                       name={`resolved-${discussion.id}`}
@@ -325,7 +527,7 @@ export default function PazzaPost() {
                     />
                     Unresolved
                   </label>
-                  <label style={{ display: "flex", alignItems: "center", gap: "0.3rem", cursor: "pointer" }}>
+                  <label className="d-flex align-items-center gap-1" style={{ cursor: "pointer" }}>
                     <input
                       type="radio"
                       name={`resolved-${discussion.id}`}
@@ -336,170 +538,116 @@ export default function PazzaPost() {
                   </label>
                 </div>
               )}
-              <div
-                className="flex flex-row"
-                style={{ alignItems: "center", gap: "0.5rem", marginBottom: "0.4rem" }}
-              >
-                <FaUserCircle style={{ fontSize: "20px", color: "#6366f1", flexShrink: 0 }} />
-                <span style={{ fontWeight: "600", fontSize: "0.875rem", color: "#374151" }}>
-                  {getUserName(discussion.authorId)}
-                </span>
-              </div>
-              <div
-                style={{ margin: 0, fontSize: "0.9rem", color: "#374151", lineHeight: "1.5" }}
-                dangerouslySetInnerHTML={{ __html: sanitize(discussion.content) }}
-              />
-            </div>
-
-            {/* Replies */}
-            <div style={{ backgroundColor: "#ffffff" }}>
-              {discussion.replies.map((reply) => (
-                <div
-                  key={reply.id}
-                  style={{
-                    padding: "0.75rem 1rem 0.75rem 2.5rem",
-                    borderTop: "1px solid #f3f4f6",
-                  }}
-                >
-                  <div
-                    className="flex flex-row"
-                    style={{ alignItems: "center", gap: "0.4rem", marginBottom: "0.25rem" }}
-                  >
-                    <FaUserCircle
-                      style={{ fontSize: "14px", color: "#9ca3af", flexShrink: 0 }}
-                    />
-                    <span style={{ fontWeight: "600", fontSize: "0.8rem", color: "#6b7280" }}>
-                      {getUserName(reply.authorId)}
-                    </span>
-                  </div>
-                  <p style={{ margin: 0, fontSize: "0.875rem", color: "#4b5563", lineHeight: "1.5" }}>
-                    {reply.content}
-                  </p>
+              <div className="d-flex align-items-center justify-content-between mb-2">
+                <div className="d-flex align-items-center gap-2">
+                  <FaUserCircle style={{ fontSize: "16px", color: "#555", flexShrink: 0 }} />
+                  <span style={{ fontWeight: 600, fontSize: "0.875rem" }}>
+                    {getUserName(discussion.authorId)}
+                  </span>
+                  <span className="text-muted" style={{ fontSize: "0.75rem" }}>
+                    {new Date(discussion.createdAt).toLocaleString()}
+                  </span>
                 </div>
-              ))}
-
-              {/* Reply input */}
-              {replyingTo === discussion.id ? (
-                <div
-                  style={{
-                    padding: "0.75rem 1rem 0.75rem 2.5rem",
-                    borderTop: "1px solid #f3f4f6",
-                    backgroundColor: "#f9fafb",
-                  }}
-                >
-                  <textarea
-                    autoFocus
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    placeholder="Write a reply…"
-                    rows={2}
-                    style={{
-                      width: "100%",
-                      padding: "0.5rem 0.75rem",
-                      fontSize: "0.875rem",
-                      border: "1px solid #d1d5db",
-                      borderRadius: "6px",
-                      resize: "vertical",
-                      outline: "none",
-                      fontFamily: "inherit",
-                      marginBottom: "0.5rem",
-                    }}
-                  />
-                  <div className="flex flex-row" style={{ gap: "0.5rem" }}>
-                    <button
-                      onClick={() => submitReply(discussion.id)}
-                      style={{
-                        padding: "0.35rem 0.9rem",
-                        fontSize: "0.8rem",
-                        fontWeight: "600",
-                        backgroundColor: "#6366f1",
-                        color: "#ffffff",
-                        border: "none",
-                        borderRadius: "6px",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Submit
-                    </button>
-                    <button
-                      onClick={() => { setReplyingTo(null); setReplyText(""); }}
-                      style={{
-                        padding: "0.35rem 0.9rem",
-                        fontSize: "0.8rem",
-                        fontWeight: "600",
-                        backgroundColor: "transparent",
-                        color: "#6b7280",
-                        border: "1px solid #d1d5db",
-                        borderRadius: "6px",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Cancel
-                    </button>
+                {(isInstructor || discussion.authorId === nameInfo._id) && editingDiscussionId !== discussion.id && (
+                  <Dropdown>
+                    <Dropdown.Toggle variant="outline-secondary" size="sm">Actions</Dropdown.Toggle>
+                    <Dropdown.Menu>
+                      <Dropdown.Item onClick={() => { setEditingDiscussionId(discussion.id); setEditDiscussionContent(discussion.content); }}>Edit</Dropdown.Item>
+                      <Dropdown.Item className="text-danger" onClick={() => handleDeleteDiscussion(discussion.id)}>Delete</Dropdown.Item>
+                    </Dropdown.Menu>
+                  </Dropdown>
+                )}
+              </div>
+              {editingDiscussionId === discussion.id ? (
+                <div>
+                  <ReactQuill theme="snow" value={editDiscussionContent} onChange={setEditDiscussionContent} />
+                  <div className="d-flex gap-2 mt-2">
+                    <button className="btn btn-primary btn-sm" onClick={() => handleSaveDiscussion(discussion.id)}>Save</button>
+                    <button className="btn btn-outline-secondary btn-sm" onClick={() => setEditingDiscussionId(null)}>Cancel</button>
                   </div>
                 </div>
               ) : (
-                <div
-                  style={{
-                    padding: "0.5rem 1rem 0.5rem 2.5rem",
-                    borderTop: "1px solid #f3f4f6",
-                  }}
-                >
-                  <button
-                    onClick={() => { setReplyingTo(discussion.id); setReplyText(""); }}
-                    style={{
-                      fontSize: "0.8rem",
-                      fontWeight: "600",
-                      color: "#6366f1",
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      padding: 0,
-                    }}
-                  >
-                    + Reply
-                  </button>
-                </div>
+                <div style={{ fontSize: "0.9rem" }} dangerouslySetInnerHTML={{ __html: sanitize(discussion.content) }} />
               )}
             </div>
+
+            {/* Replies */}
+            {discussion.replies.map((reply) => (
+              <div key={reply.id} className="px-3 py-2 border-top" style={{ paddingLeft: "2rem" }}>
+                <div className="d-flex align-items-center justify-content-between mb-1">
+                  <div className="d-flex align-items-center gap-2">
+                    <FaUserCircle style={{ fontSize: "13px", color: "#888", flexShrink: 0 }} />
+                    <span style={{ fontWeight: 600, fontSize: "0.8rem", color: "#555" }}>
+                      {getUserName(reply.authorId)}
+                    </span>
+                    <span className="text-muted" style={{ fontSize: "0.75rem" }}>
+                      {new Date(reply.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+                  {(isInstructor || reply.authorId === nameInfo._id) && editingReplyId !== reply.id && (
+                    <Dropdown>
+                      <Dropdown.Toggle variant="outline-secondary" size="sm">Actions</Dropdown.Toggle>
+                      <Dropdown.Menu>
+                        <Dropdown.Item onClick={() => { setEditingReplyId(reply.id); setEditReplyContent(reply.content); }}>Edit</Dropdown.Item>
+                        <Dropdown.Item className="text-danger" onClick={() => handleDeleteReply(discussion.id, reply.id)}>Delete</Dropdown.Item>
+                      </Dropdown.Menu>
+                    </Dropdown>
+                  )}
+                </div>
+                {editingReplyId === reply.id ? (
+                  <div>
+                    <textarea
+                      autoFocus
+                      value={editReplyContent}
+                      onChange={(e) => setEditReplyContent(e.target.value)}
+                      rows={2}
+                      className="form-control form-control-sm mb-2"
+                    />
+                    <div className="d-flex gap-2">
+                      <button className="btn btn-primary btn-sm" onClick={() => handleSaveReply(discussion.id, reply.id)}>Save</button>
+                      <button className="btn btn-outline-secondary btn-sm" onClick={() => setEditingReplyId(null)}>Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mb-0" style={{ fontSize: "0.875rem" }}>{reply.content}</p>
+                )}
+              </div>
+            ))}
+
+            {/* Reply input / button */}
+            {replyingTo === discussion.id ? (
+              <div className="px-3 py-2 border-top bg-light">
+                <textarea
+                  autoFocus
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  placeholder="Write a reply…"
+                  rows={2}
+                  className="form-control form-control-sm mb-2"
+                />
+                <div className="d-flex gap-2">
+                  <button className="btn btn-primary btn-sm" onClick={() => submitReply(discussion.id)}>Submit</button>
+                  <button className="btn btn-outline-secondary btn-sm" onClick={() => { setReplyingTo(null); setReplyText(""); }}>Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <div className="px-3 py-2 border-top">
+                <button
+                  className="btn btn-link btn-sm p-0 text-decoration-none"
+                  onClick={() => { setReplyingTo(discussion.id); setReplyText(""); }}
+                >
+                  + Reply
+                </button>
+              </div>
+            )}
           </div>
         ))}
 
         {/* Compose new discussion */}
-        <div
-          style={{
-            marginTop: "1.5rem",
-            padding: "1rem",
-            borderRadius: "8px",
-            border: "1px solid #e5e7eb",
-            backgroundColor: "#f9fafb",
-          }}
-        >
-          <h5
-            style={{
-              fontWeight: "600",
-              fontSize: "0.95rem",
-              color: "#374151",
-              marginBottom: "0.75rem",
-            }}
-          >
-            Start a follow-up discussion
-          </h5>
+        <div className="mt-3">
+          <p style={{ fontWeight: 600, fontSize: "0.95rem", marginBottom: "0.5rem" }}>Start a follow-up discussion</p>
           <ReactQuill theme="snow" value={value} onChange={setValue} />
-          <button
-            onClick={submitDiscussion}
-            style={{
-              marginTop: "0.75rem",
-              padding: "0.4rem 1.1rem",
-              fontSize: "0.875rem",
-              fontWeight: "600",
-              backgroundColor: "#6366f1",
-              color: "#ffffff",
-              border: "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-            }}
-          >
+          <button className="btn btn-primary btn-sm mt-2" onClick={submitDiscussion}>
             Post Discussion
           </button>
         </div>

@@ -113,8 +113,12 @@ export default function NewPazzaPost() {
           className="form-control"
           placeholder="Summarize your post in one line"
           value={summary}
+          maxLength={100}
           onChange={(e) => setSummary(e.target.value)}
         />
+        <div className="text-end text-muted" style={{ fontSize: "0.75rem" }}>
+          {summary.length}/100
+        </div>
       </div>
 
       <div className="mb-3">

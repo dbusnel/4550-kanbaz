@@ -1,3 +1,10 @@
+.accordion-item {
+  --bs-accordion-bg: #f3f4f6;
+  --bs-accordion-active-bg: #f3f4f6;
+  --bs-accordion-btn-bg: #f3f4f6;
+  --bs-accordion-btn-active-bg: #f3f4f6;
+}
+
 .link-unselected {
   font-size: 18px;
   color: white;

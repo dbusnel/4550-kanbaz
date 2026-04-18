@@ -197,6 +197,99 @@ export const deletePazzaFolder = async (courseId: string, folderId: string) => {
   await axios.delete(`${COURSES_API}/${courseId}/pazza/folders/${folderId}`);
 };
 
+export const updatePazzaPost = async (courseId: string, userId: string, postId: string, updates: { summary?: string; details?: string }) => {
+  const { data } = await axios.put(
+    USERS_API + `/${userId}/courses/${courseId}/pazza/${postId}`,
+    updates,
+  );
+  return data;
+};
+
+export const deletePazzaPostById = async (courseId: string, userId: string, postId: string) => {
+  await axios.delete(
+    USERS_API + `/${userId}/courses/${courseId}/pazza/${postId}`,
+  );
+};
+
+export const incrementPazzaViewCount = async (courseId: string, userId: string, postId: string) => {
+  const { data } = await axios.post(
+    USERS_API + `/${userId}/courses/${courseId}/pazza/${postId}/view`,
+  );
+  return data as { viewCount: number };
+};
+
+export const updateFollowUpDiscussion = async (courseId: string, userId: string, postId: string, discussionId: string, content: string) => {
+  const { data } = await axios.put(
+    USERS_API + `/${userId}/courses/${courseId}/pazza/${postId}/discussions/${discussionId}`,
+    { content },
+  );
+  return data;
+};
+
+export const deleteFollowUpDiscussion = async (courseId: string, userId: string, postId: string, discussionId: string) => {
+  await axios.delete(
+    USERS_API + `/${userId}/courses/${courseId}/pazza/${postId}/discussions/${discussionId}`,
+  );
+};
+
+export const updateReply = async (courseId: string, userId: string, postId: string, discussionId: string, replyId: string, content: string) => {
+  const { data } = await axios.put(
+    USERS_API + `/${userId}/courses/${courseId}/pazza/${postId}/discussions/${discussionId}/replies/${replyId}`,
+    { content },
+  );
+  return data;
+};
+
+export const deleteReply = async (courseId: string, userId: string, postId: string, discussionId: string, replyId: string) => {
+  await axios.delete(
+    USERS_API + `/${userId}/courses/${courseId}/pazza/${postId}/discussions/${discussionId}/replies/${replyId}`,
+  );
+};
+
+export const createStudentAnswer = async (courseId: string, userId: string, postId: string, content: string) => {
+  const { data } = await axios.post(
+    USERS_API + `/${userId}/courses/${courseId}/pazza/${postId}/student-answers`,
+    { content },
+  );
+  return data;
+};
+
+export const updateStudentAnswer = async (courseId: string, userId: string, postId: string, answerId: string, content: string) => {
+  const { data } = await axios.put(
+    USERS_API + `/${userId}/courses/${courseId}/pazza/${postId}/student-answers/${answerId}`,
+    { content },
+  );
+  return data;
+};
+
+export const deleteStudentAnswer = async (courseId: string, userId: string, postId: string, answerId: string) => {
+  await axios.delete(
+    USERS_API + `/${userId}/courses/${courseId}/pazza/${postId}/student-answers/${answerId}`,
+  );
+};
+
+export const createInstructorAnswer = async (courseId: string, userId: string, postId: string, content: string) => {
+  const { data } = await axios.post(
+    USERS_API + `/${userId}/courses/${courseId}/pazza/${postId}/instructor-answers`,
+    { content },
+  );
+  return data;
+};
+
+export const updateInstructorAnswer = async (courseId: string, userId: string, postId: string, answerId: string, content: string) => {
+  const { data } = await axios.put(
+    USERS_API + `/${userId}/courses/${courseId}/pazza/${postId}/instructor-answers/${answerId}`,
+    { content },
+  );
+  return data;
+};
+
+export const deleteInstructorAnswer = async (courseId: string, userId: string, postId: string, answerId: string) => {
+  await axios.delete(
+    USERS_API + `/${userId}/courses/${courseId}/pazza/${postId}/instructor-answers/${answerId}`,
+  );
+};
+
 export const createPazzaPost = async (
   courseId: string,
   userId: string,
