@@ -209,7 +209,7 @@ export default function PazzaLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!cid) return;
     client.getPazzaFolders(cid as string).then(setFolders);
-  }, [cid]);
+  }, [cid, pathname]);
 
   const toggleFolderFilter = (folderId: string) => {
     setActiveFolder((prev) => (prev === folderId ? null : folderId));
