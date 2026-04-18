@@ -172,3 +172,39 @@ export const addReplyToDiscussion = async (
   );
   return data;
 };
+
+export const getCourseUsers = async (courseId: string) => {
+  const { data } = await axios.get(`${COURSES_API}/${courseId}/users`);
+  return data;
+};
+
+export const getPazzaFolders = async (courseId: string) => {
+  const { data } = await axios.get(`${COURSES_API}/${courseId}/pazza/folders`);
+  return data;
+};
+
+export const createPazzaFolder = async (courseId: string, name: string) => {
+  const { data } = await axios.post(`${COURSES_API}/${courseId}/pazza/folders`, { name });
+  return data;
+};
+
+export const updatePazzaFolder = async (courseId: string, folderId: string, name: string) => {
+  const { data } = await axios.put(`${COURSES_API}/${courseId}/pazza/folders/${folderId}`, { name });
+  return data;
+};
+
+export const deletePazzaFolder = async (courseId: string, folderId: string) => {
+  await axios.delete(`${COURSES_API}/${courseId}/pazza/folders/${folderId}`);
+};
+
+export const createPazzaPost = async (
+  courseId: string,
+  userId: string,
+  post: { summary: string; type: string; details: string; folderIds?: string[]; visibility?: string; visibleTo?: string[] },
+) => {
+  const { data } = await axios.post(
+    USERS_API + `/${userId}/courses/${courseId}/pazza`,
+    post,
+  );
+  return data;
+};

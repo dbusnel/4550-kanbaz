@@ -2,8 +2,9 @@
 
 import { ReactNode } from "react";
 import Link from "next/link";
-import { useParams, usePathname } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { FaSearch, FaPlus, FaFilter } from "react-icons/fa";
+import { GoTriangleLeft, GoTriangleRight } from "react-icons/go";
 import { MdOutlineForum } from "react-icons/md";
 import { IoMdArrowDropdown } from "react-icons/io";
 import { Nav, NavItem, NavLink } from "react-bootstrap";
@@ -14,6 +15,7 @@ import { RootState } from "../../../store";
 import * as client from "../../client";
 import { useState, useEffect } from "react";
 import { userInfo } from "os";
+import DOMPurify from "dompurify";
 
 interface userInfo {
   firstName: string;
@@ -31,11 +33,23 @@ const CATEGORY_COLORS: Record<string, string> = {
 export default function PazzaLayout({ children }: { children: ReactNode }) {
   const { cid } = useParams();
   const pathname = usePathname();
+  const router = useRouter();
   const { currentUser } = useSelector(
     (state: RootState) => state.accountReducer,
   );
 
   const [posts, setPosts] = useState([]);
+  const [folders, setFolders] = useState<{ id: string; name: string }[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFolders, setActiveFolders] = useState<string[]>([]);
+  const [sidebarVisible, setSidebarVisible] = useState(true);
+
+  const INSTRUCTOR_ROLES = ["FACULTY", "INSTRUCTOR", "TA"];
+  const isInstructor = INSTRUCTOR_ROLES.includes(
+    (currentUser as any)?.role?.toUpperCase(),
+  );
+  const isManagePage = pathname.endsWith("/manage");
+  const showSidebar = sidebarVisible && !isManagePage;
 
   const nameInfo: userInfo = { firstName: "", lastName: "", _id: "" };
   if (
@@ -61,7 +75,18 @@ export default function PazzaLayout({ children }: { children: ReactNode }) {
       setPosts(posts);
     };
     fetchPosts();
-  }, [currentUser, cid, nameInfo]);
+  }, [currentUser, cid, pathname]);
+
+  useEffect(() => {
+    if (!cid) return;
+    client.getPazzaFolders(cid as string).then(setFolders);
+  }, [cid]);
+
+  const toggleFolderFilter = (folderId: string) => {
+    setActiveFolders((prev) =>
+      prev.includes(folderId) ? prev.filter((id) => id !== folderId) : [...prev, folderId],
+    );
+  };
 
   if (currentUser === null || cid === undefined)
     return (
@@ -100,14 +125,16 @@ export default function PazzaLayout({ children }: { children: ReactNode }) {
           </NavLink>
         </NavItem>
 
-        <NavItem>
-          <NavLink
-            href={`/courses/${cid}/pazza/manage`}
-            className={`nav-link ${pathname.endsWith("manage") ? "active" : ""}`}
-          >
-            Manage class
-          </NavLink>
-        </NavItem>
+        {isInstructor && (
+          <NavItem>
+            <NavLink
+              href={`/courses/${cid}/pazza/manage`}
+              className={`nav-link ${pathname.endsWith("manage") ? "active" : ""}`}
+            >
+              Manage class
+            </NavLink>
+          </NavItem>
+        )}
 
         <div className="ms-auto d-flex gap-2">
           <FaCircleUser />
@@ -117,31 +144,41 @@ export default function PazzaLayout({ children }: { children: ReactNode }) {
       </Nav>
 
       {/* Filter bar */}
-      <div
+      {!isManagePage && <div
         className="d-flex align-items-center gap-2 px-3 py-1 border-bottom bg-light"
         style={{ flexShrink: 0, fontSize: 13 }}
       >
-        <span className="text-muted me-1">Filter:</span>
-        {["All", "Unread", "Unanswered", "Following"].map((f) => (
-          <button
-            key={f}
-            className={`btn btn-sm py-0 ${f === "All" ? "btn-secondary" : "btn-outline-secondary"}`}
-            style={{ fontSize: 12 }}
-          >
-            {f}
-          </button>
-        ))}
+        <button
+          className="btn btn-sm btn-link p-0 text-secondary"
+          onClick={() => setSidebarVisible((v) => !v)}
+          title={sidebarVisible ? "Collapse sidebar" : "Expand sidebar"}
+        >
+          {sidebarVisible ? <GoTriangleLeft size={16} /> : <GoTriangleRight size={16} />}
+        </button>
+        <button
+          className="btn btn-sm btn-outline-secondary py-0"
+          style={{ fontSize: 12 }}
+          onClick={() => setActiveFolders([])}
+        >
+          Clear
+        </button>
         <div className="vr mx-1" />
-        {Object.entries(CATEGORY_COLORS).map(([cat, color]) => (
-          <button
-            key={cat}
-            className={`btn btn-sm btn-outline-${color} py-0`}
-            style={{ fontSize: 12 }}
-          >
-            {cat}
-          </button>
-        ))}
-      </div>
+        <span className="text-muted me-1">Filter:</span>
+        {folders.map((folder) => {
+          const color = CATEGORY_COLORS[folder.name.toLowerCase()] ?? "secondary";
+          const active = activeFolders.includes(folder.id);
+          return (
+            <button
+              key={folder.id}
+              className={`btn btn-sm py-0 ${active ? `btn-${color}` : `btn-outline-${color}`}`}
+              style={{ fontSize: 12 }}
+              onClick={() => toggleFolderFilter(folder.id)}
+            >
+              {folder.name}
+            </button>
+          );
+        })}
+      </div>}
 
       {/* Body: sidebar + content */}
       <div
@@ -151,10 +188,49 @@ export default function PazzaLayout({ children }: { children: ReactNode }) {
         {/* Posts sidebar */}
         <div
           className="border-end bg-white overflow-auto"
-          style={{ width: 280, flexShrink: 0 }}
+          style={{
+            width: showSidebar ? 280 : 0,
+            flexShrink: 0,
+            overflow: "hidden",
+            transition: "width 0.3s ease",
+          }}
         >
+          <div style={{ width: 280 }}>
+          <div className="p-2 border-bottom d-flex gap-2 align-items-center">
+            <button
+              className="btn btn-primary"
+              style={{ fontSize: 13, whiteSpace: "nowrap", flexShrink: 0 }}
+              onClick={() => router.push(`/courses/${cid}/pazza/new`)}
+            >
+              <FaPlus className="me-1" style={{ fontSize: 11 }} />
+              New Post
+            </button>
+            <div className="input-group input-group-sm">
+              <span className="input-group-text bg-white border-end-0">
+                <FaSearch style={{ fontSize: 11, color: "#6c757d" }} />
+              </span>
+              <input
+                type="text"
+                className="form-control border-start-0"
+                placeholder="Search…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ fontSize: 13 }}
+              />
+            </div>
+          </div>
           <div className="list-group list-group-flush">
-            {posts.map((post) => {
+            {[...posts]
+              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+              .filter((post) => {
+                if (activeFolders.length > 0 && !activeFolders.some((id) => post.folderIds?.includes(id))) return false;
+                if (searchQuery.trim()) {
+                  const q = searchQuery.toLowerCase();
+                  if (!post.summary?.toLowerCase().includes(q) && !post.details?.toLowerCase().includes(q)) return false;
+                }
+                return true;
+              })
+              .map((post) => {
               const href = `/courses/${cid}/pazza/${post.id}`;
               const active = pathname === href;
               return (
@@ -176,10 +252,28 @@ export default function PazzaLayout({ children }: { children: ReactNode }) {
                     )}
                     <div className="flex-grow-1 overflow-hidden">
                       <div
-                        className={`text-truncate ${post.unread && !active ? "fw-semibold" : ""}`}
+                        className="fw-bold text-truncate"
+                        style={{ color: active ? undefined : "#000" }}
                       >
                         {post.summary}
                       </div>
+                      {post.details && (
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html: DOMPurify.sanitize(post.details),
+                          }}
+                          style={{
+                            fontSize: 12,
+                            color: active ? undefined : "#6c757d",
+                            marginTop: 2,
+                            display: "-webkit-box",
+                            WebkitLineClamp: 4,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                            lineHeight: "1.4",
+                          }}
+                        />
+                      )}
                       <div className="d-flex align-items-center gap-1 mt-1">
                         <span
                           className={`badge text-bg-${CATEGORY_COLORS[post.type] ?? "secondary"}`}
@@ -201,6 +295,7 @@ export default function PazzaLayout({ children }: { children: ReactNode }) {
                 </Link>
               );
             })}
+          </div>
           </div>
         </div>
 

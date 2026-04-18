@@ -186,7 +186,10 @@ export default function PazzaPost() {
         <span>Last updated: {updatedAt}</span>
       </div>
       <br />
-      <p style={{ fontSize: "1.125rem" }}>{displayPost.details}</p>
+      <div
+        style={{ fontSize: "1.125rem" }}
+        dangerouslySetInnerHTML={{ __html: sanitize(displayPost.details ?? "") }}
+      />
       <div
         style={{
           fontSize: "1.25rem",
