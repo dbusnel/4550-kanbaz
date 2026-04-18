@@ -52,6 +52,7 @@ export default function NewPazzaPost() {
     allInstructorIds.every((id) => selectedUsers.includes(id));
 
   const toggleUser = (uid: string) => {
+    if (uid === userId) return;
     setSelectedUsers((prev) =>
       prev.includes(uid) ? prev.filter((id) => id !== uid) : [...prev, uid],
     );
@@ -88,7 +89,7 @@ export default function NewPazzaPost() {
         details,
         folderIds: selectedFolders,
         visibility,
-        visibleTo: visibility === "individual" ? selectedUsers : [],
+        visibleTo: visibility === "individual" ? [...new Set([...selectedUsers, userId])] : [],
       });
       router.push(`/courses/${cid}/pazza/${post.id}`);
     } catch {
@@ -172,7 +173,10 @@ export default function NewPazzaPost() {
               type="radio"
               name="visibility"
               checked={visibility === "individual"}
-              onChange={() => setVisibility("individual")}
+              onChange={() => {
+                setVisibility("individual");
+                if (userId) setSelectedUsers((prev) => prev.includes(userId) ? prev : [...prev, userId]);
+              }}
             />
             Individual Students/Instructors
           </label>
@@ -205,10 +209,11 @@ export default function NewPazzaPost() {
                   type="checkbox"
                   id={`user-${u._id}`}
                   checked={selectedUsers.includes(u._id)}
+                  disabled={u._id === userId}
                   onChange={() => toggleUser(u._id)}
                 />
-                <label htmlFor={`user-${u._id}`} style={{ cursor: "pointer", margin: 0 }}>
-                  {u.firstName} {u.lastName}
+                <label htmlFor={`user-${u._id}`} style={{ cursor: u._id === userId ? "default" : "pointer", margin: 0 }}>
+                  {u.firstName} {u.lastName}{u._id === userId ? " (you)" : ""}
                 </label>
               </div>
             ))}
@@ -219,10 +224,11 @@ export default function NewPazzaPost() {
                   type="checkbox"
                   id={`user-${u._id}`}
                   checked={selectedUsers.includes(u._id)}
+                  disabled={u._id === userId}
                   onChange={() => toggleUser(u._id)}
                 />
-                <label htmlFor={`user-${u._id}`} style={{ cursor: "pointer", margin: 0 }}>
-                  {u.firstName} {u.lastName}
+                <label htmlFor={`user-${u._id}`} style={{ cursor: u._id === userId ? "default" : "pointer", margin: 0 }}>
+                  {u.firstName} {u.lastName}{u._id === userId ? " (you)" : ""}
                 </label>
               </div>
             ))}
