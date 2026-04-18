@@ -96,21 +96,47 @@ function groupPosts(posts: any[]): PostGroup[] {
 
   const groups: PostGroup[] = [];
   if (todayPosts.length > 0)
-    groups.push({ label: "Today", posts: todayPosts.sort(sortDesc), sortKey: todayMidnight.getTime() });
+    groups.push({
+      label: "Today",
+      posts: todayPosts.sort(sortDesc),
+      sortKey: todayMidnight.getTime(),
+    });
   if (yesterdayPosts.length > 0)
-    groups.push({ label: "Yesterday", posts: yesterdayPosts.sort(sortDesc), sortKey: yesterdayMidnight.getTime() });
+    groups.push({
+      label: "Yesterday",
+      posts: yesterdayPosts.sort(sortDesc),
+      sortKey: yesterdayMidnight.getTime(),
+    });
   if (lastWeekPosts.length > 0)
-    groups.push({ label: "Last Week", posts: lastWeekPosts.sort(sortDesc), sortKey: lastWeekMonday.getTime() });
+    groups.push({
+      label: "Last Week",
+      posts: lastWeekPosts.sort(sortDesc),
+      sortKey: lastWeekMonday.getTime(),
+    });
 
-  const sortedOlder = [...olderMap.values()].sort((a, b) => b.monday.getTime() - a.monday.getTime());
+  const sortedOlder = [...olderMap.values()].sort(
+    (a, b) => b.monday.getTime() - a.monday.getTime(),
+  );
   for (const { posts: p, monday } of sortedOlder) {
-    groups.push({ label: formatWeekLabel(monday), posts: p.sort(sortDesc), sortKey: monday.getTime() });
+    groups.push({
+      label: formatWeekLabel(monday),
+      posts: p.sort(sortDesc),
+      sortKey: monday.getTime(),
+    });
   }
 
   return groups;
 }
 
-function PostCard({ post, cid, pathname }: { post: any; cid: string; pathname: string }) {
+function PostCard({
+  post,
+  cid,
+  pathname,
+}: {
+  post: any;
+  cid: string;
+  pathname: string;
+}) {
   const href = `/courses/${cid}/pazza/${post.id}`;
   const active = pathname === href;
   return (
@@ -121,17 +147,25 @@ function PostCard({ post, cid, pathname }: { post: any; cid: string; pathname: s
     >
       <div className="d-flex align-items-start gap-2">
         {post.unread && !active ? (
-          <span className="bg-primary rounded-circle mt-1" style={{ width: 8, height: 8, flexShrink: 0 }} />
+          <span
+            className="bg-primary rounded-circle mt-1"
+            style={{ width: 8, height: 8, flexShrink: 0 }}
+          />
         ) : (
           <span style={{ width: 8, flexShrink: 0 }} />
         )}
         <div className="flex-grow-1 overflow-hidden">
-          <div className="fw-bold text-truncate" style={{ color: active ? undefined : "#000" }}>
+          <div
+            className="fw-bold text-truncate"
+            style={{ color: active ? undefined : "#000" }}
+          >
             {post.summary}
           </div>
           {post.details && (
             <div
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.details) }}
+              dangerouslySetInnerHTML={{
+                __html: DOMPurify.sanitize(post.details),
+              }}
               style={{
                 fontSize: 12,
                 color: active ? undefined : "#6c757d",
@@ -145,24 +179,40 @@ function PostCard({ post, cid, pathname }: { post: any; cid: string; pathname: s
             />
           )}
           <div className="d-flex align-items-center gap-1 mt-1 flex-wrap">
-            <span className={`badge text-bg-${CATEGORY_COLORS[post.type] ?? "secondary"}`} style={{ fontSize: 10 }}>
+            <span
+              className={`badge text-bg-${CATEGORY_COLORS[post.type] ?? "secondary"}`}
+              style={{ fontSize: 10 }}
+            >
               {post.type}
             </span>
             {post.answered && (
-              <span className="badge text-bg-success" style={{ fontSize: 10 }}>answered</span>
+              <span className="badge text-bg-success" style={{ fontSize: 10 }}>
+                answered
+              </span>
             )}
             {(() => {
               const INSTRUCTOR_ROLES = ["FACULTY", "INSTRUCTOR", "TA"];
-              const isInstructorPost = INSTRUCTOR_ROLES.includes(post.authorRole?.toUpperCase());
+              const isInstructorPost = INSTRUCTOR_ROLES.includes(
+                post.authorRole?.toUpperCase(),
+              );
               return (
-                <span className={`badge ${isInstructorPost ? "text-bg-dark" : "text-bg-light border"}`} style={{ fontSize: 10 }}>
+                <span
+                  className={`badge ${isInstructorPost ? "text-bg-dark" : "text-bg-light border"}`}
+                  style={{ fontSize: 10 }}
+                >
                   {isInstructorPost ? "Instructor" : "Student"}
                 </span>
               );
             })()}
           </div>
           {post.createdAt && (
-            <div style={{ fontSize: 11, color: active ? undefined : "#9ca3af", marginTop: 2 }}>
+            <div
+              style={{
+                fontSize: 11,
+                color: active ? undefined : "#9ca3af",
+                marginTop: 2,
+              }}
+            >
               {new Date(post.createdAt).toLocaleString()}
             </div>
           )}
@@ -176,7 +226,9 @@ export default function PazzaLayout({ children }: { children: ReactNode }) {
   const { cid } = useParams();
   const pathname = usePathname();
   const router = useRouter();
-  const { currentUser } = useSelector((state: RootState) => state.accountReducer);
+  const { currentUser } = useSelector(
+    (state: RootState) => state.accountReducer,
+  );
 
   const [posts, setPosts] = useState([]);
   const [folders, setFolders] = useState<{ id: string; name: string }[]>([]);
@@ -185,13 +237,24 @@ export default function PazzaLayout({ children }: { children: ReactNode }) {
   const [sidebarVisible, setSidebarVisible] = useState(true);
 
   const INSTRUCTOR_ROLES = ["FACULTY", "INSTRUCTOR", "TA"];
-  const isInstructor = INSTRUCTOR_ROLES.includes((currentUser as any)?.role?.toUpperCase());
+  const isInstructor = INSTRUCTOR_ROLES.includes(
+    (currentUser as any)?.role?.toUpperCase(),
+  );
   const isManagePage = pathname.endsWith("/manage");
   const showSidebar = sidebarVisible && !isManagePage;
 
   const nameInfo: userInfo = { firstName: "", lastName: "", _id: "" };
-  if (currentUser !== null && "firstName" in currentUser && "lastName" in currentUser && "_id" in currentUser) {
-    const user = currentUser as { firstName: string; lastName: string; _id: string };
+  if (
+    currentUser !== null &&
+    "firstName" in currentUser &&
+    "lastName" in currentUser &&
+    "_id" in currentUser
+  ) {
+    const user = currentUser as {
+      firstName: string;
+      lastName: string;
+      _id: string;
+    };
     nameInfo.firstName = user.firstName;
     nameInfo.lastName = user.lastName;
     nameInfo._id = user._id;
@@ -200,7 +263,10 @@ export default function PazzaLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     const fetchPosts = async () => {
       if (nameInfo === null || cid === undefined) return;
-      const fetched = await client.getAllPazzaPosts(cid as string, nameInfo._id);
+      const fetched = await client.getAllPazzaPosts(
+        cid as string,
+        nameInfo._id,
+      );
       setPosts(fetched);
     };
     fetchPosts();
@@ -220,7 +286,11 @@ export default function PazzaLayout({ children }: { children: ReactNode }) {
       if (activeFolder && !post.folderIds?.includes(activeFolder)) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        if (!post.summary?.toLowerCase().includes(q) && !post.details?.toLowerCase().includes(q)) return false;
+        if (
+          !post.summary?.toLowerCase().includes(q) &&
+          !post.details?.toLowerCase().includes(q)
+        )
+          return false;
       }
       return true;
     });
@@ -237,23 +307,42 @@ export default function PazzaLayout({ children }: { children: ReactNode }) {
   }, [filteredGroups]);
 
   if (currentUser === null || cid === undefined)
-    return <div><p>Please log in.</p></div>;
+    return (
+      <div>
+        <p>Please log in.</p>
+      </div>
+    );
 
   return (
     <div className="d-flex flex-column flex-grow-1" style={{ minHeight: 0 }}>
       {/* Top navbar */}
-      <Nav className="d-flex align-items-center px-3 py-1 gap-1" style={{ backgroundColor: "#70b9e0" }}>
+      <Nav
+        className="d-flex align-items-center px-3 py-1 gap-1"
+        style={{ backgroundColor: "#70b9e0" }}
+      >
         <div className="d-flex align-items-center gap-2 me-2">
           <MdOutlineForum size={18} style={{ color: "#fff" }} />
-          <span className="fw-semibold" style={{ color: "#fff", fontSize: 15 }}>Pazza</span>
-          <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 13 }}>·</span>
-          <span style={{ color: "rgba(255,255,255,0.8)", fontSize: 13 }}>{cid}</span>
+          <span className="fw-semibold" style={{ color: "#fff", fontSize: 15 }}>
+            Pazza
+          </span>
+          <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 13 }}>
+            ·
+          </span>
+          <span style={{ color: "rgba(255,255,255,0.8)", fontSize: 13 }}>
+            {cid}
+          </span>
         </div>
         <NavItem>
           <Link
             href={`/courses/${cid}/pazza`}
             className="nav-link"
-            style={{ color: "#fff", fontWeight: pathname.endsWith("pazza") && !pathname.endsWith("manage") ? 700 : 400 }}
+            style={{
+              color: "#fff",
+              fontWeight:
+                pathname.endsWith("pazza") && !pathname.endsWith("manage")
+                  ? 700
+                  : 400,
+            }}
           >
             Q &amp; A
           </Link>
@@ -263,7 +352,10 @@ export default function PazzaLayout({ children }: { children: ReactNode }) {
             <Link
               href={`/courses/${cid}/pazza/manage`}
               className="nav-link"
-              style={{ color: "#fff", fontWeight: pathname.endsWith("manage") ? 700 : 400 }}
+              style={{
+                color: "#fff",
+                fontWeight: pathname.endsWith("manage") ? 700 : 400,
+              }}
             >
               Manage class
             </Link>
@@ -271,7 +363,9 @@ export default function PazzaLayout({ children }: { children: ReactNode }) {
         )}
         <div className="ms-auto d-flex align-items-center gap-2">
           <FaCircleUser size={18} style={{ color: "#fff" }} />
-          <span style={{ color: "#fff", fontSize: 13 }}>{`${(currentUser as any).firstName} ${(currentUser as any).lastName}`}</span>
+          <span
+            style={{ color: "#fff", fontSize: 13 }}
+          >{`${(currentUser as any).firstName} ${(currentUser as any).lastName}`}</span>
         </div>
       </Nav>
 
@@ -286,7 +380,11 @@ export default function PazzaLayout({ children }: { children: ReactNode }) {
             onClick={() => setSidebarVisible((v) => !v)}
             title={sidebarVisible ? "Collapse sidebar" : "Expand sidebar"}
           >
-            {sidebarVisible ? <GoTriangleLeft size={16} /> : <GoTriangleRight size={16} />}
+            {sidebarVisible ? (
+              <GoTriangleLeft size={16} />
+            ) : (
+              <GoTriangleRight size={16} />
+            )}
           </button>
           <button
             className="btn btn-sm btn-outline-secondary py-0"
@@ -298,7 +396,8 @@ export default function PazzaLayout({ children }: { children: ReactNode }) {
           <div className="vr mx-1" />
           <span className="text-muted me-1">Filter:</span>
           {folders.map((folder) => {
-            const color = CATEGORY_COLORS[folder.name.toLowerCase()] ?? "secondary";
+            const color =
+              CATEGORY_COLORS[folder.name.toLowerCase()] ?? "secondary";
             const active = activeFolder === folder.id;
             return (
               <button
@@ -324,7 +423,10 @@ export default function PazzaLayout({ children }: { children: ReactNode }) {
       )}
 
       {/* Body: sidebar + content */}
-      <div className="d-flex flex-grow-1" style={{ minHeight: 0, overflow: "hidden" }}>
+      <div
+        className="d-flex flex-grow-1"
+        style={{ minHeight: 0, overflow: "hidden" }}
+      >
         {/* Posts sidebar */}
         <div
           className="border-end bg-white overflow-auto"
@@ -361,20 +463,41 @@ export default function PazzaLayout({ children }: { children: ReactNode }) {
             </div>
 
             {filteredGroups.length === 0 ? (
-              <p className="text-muted text-center py-3" style={{ fontSize: 13 }}>No posts found.</p>
+              <p
+                className="text-muted text-center py-3"
+                style={{ fontSize: 13 }}
+              >
+                No posts found.
+              </p>
             ) : (
-              <Accordion activeKey={openKeys} onSelect={(k) => setOpenKeys(k as string[])} alwaysOpen flush>
+              <Accordion
+                activeKey={openKeys}
+                onSelect={(k) => setOpenKeys(k as string[])}
+                alwaysOpen
+                flush
+              >
                 {filteredGroups.map((group) => (
                   <Accordion.Item key={group.label} eventKey={group.label}>
                     <Accordion.Header>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: "#495057" }}>
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: "#495057",
+                        }}
+                      >
                         {group.label}
                       </span>
                     </Accordion.Header>
                     <Accordion.Body className="p-0">
                       <div className="list-group list-group-flush">
                         {group.posts.map((post: any) => (
-                          <PostCard key={post.id} post={post} cid={cid as string} pathname={pathname} />
+                          <PostCard
+                            key={post.id}
+                            post={post}
+                            cid={cid as string}
+                            pathname={pathname}
+                          />
                         ))}
                       </div>
                     </Accordion.Body>
